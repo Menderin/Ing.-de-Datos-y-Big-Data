@@ -1,0 +1,47 @@
+# Credenciales y configuración local
+.env
+.env.*
+!.env.example
+
+# Backups y archivos físicos de bases de datos
+*.bak
+*.bacpac
+*.mdf
+*.ndf
+*.ldf
+
+# Dependencias y salidas de aplicaciones web
+node_modules/
+.next/
+.vinext/
+dist/
+out/
+build/
+coverage/
+.wrangler/
+.vercel/
+
+# Scaffold temporal no utilizado por los mockups estáticos
+Taller1/mocks/dashboard/
+
+# Archivos auxiliares generados durante la revisión del PDF
+Docs/slide5.png
+
+# Logs y temporales
+*.log
+*.tmp
+*.temp
+*.cache
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Sistema operativo y editores
+.DS_Store
+Thumbs.db
+Desktop.ini
+.vscode/
+.idea/
+*.swp
+*.swo

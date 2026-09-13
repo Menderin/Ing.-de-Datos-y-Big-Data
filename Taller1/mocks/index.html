@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>AdventureWorks - Mockups de reportabilidad</title>
+  <meta name="description" content="Quince vistas conceptuales para clientes, producción y ventas.">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main class="app">
+    <aside class="sidebar">
+      <div class="brand"><strong>AdventureWorks</strong><span>Mockups de reportabilidad</span></div>
+      <nav id="report-nav" aria-label="Reportes"></nav>
+    </aside>
+    <section class="workspace">
+      <header class="topbar">
+        <div>
+          <span id="eyebrow" class="eyebrow"></span>
+          <h1 id="report-title"></h1>
+          <p id="report-description"></p>
+        </div>
+        <span class="badge">Mockup conceptual</span>
+      </header>
+      <section class="filters" aria-label="Filtros">
+        <label>Periodo<select id="year-filter"><option>Todos</option><option>2011</option><option>2012</option><option>2013</option><option>2014</option></select></label>
+        <label>Territorio<select id="territory-filter"><option>Todos</option><option>Suroeste</option><option>Noroeste</option><option>Canadá</option><option>Australia</option><option>Reino Unido</option></select></label>
+        <span>Datos de muestra · AdventureWorks2022 · 2011-2014</span>
+      </section>
+      <div class="content">
+        <section id="kpis" class="kpis" aria-label="Indicadores principales"></section>
+        <section class="visuals">
+          <article class="panel chart-panel"><header><h2 id="chart-title"></h2><p>Los filtros modifican los valores del mockup.</p></header><div id="chart" class="chart"></div></article>
+          <article class="panel summary"><header><h2>Lectura rápida</h2><p>Resumen de la selección actual</p></header><div id="summary-content"></div></article>
+        </section>
+        <article class="panel table-panel"><header><h2>Detalle del reporte</h2><p>Tabla resumida prevista para Power BI.</p></header><div class="table-scroll"><table><thead id="table-head"></thead><tbody id="table-body"></tbody></table></div></article>
+      </div>
+    </section>
+  </main>
+  <script src="app.js"></script>
+</body>
+</html>
