@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Modelo Relacional Simplificado - Modo Claro</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, Helvetica, Arial, sans-serif; }
+    body {
+      background-color: #ffffff;
+      width: 1800px;
+      height: 1100px;
+      padding: 24px 30px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      position: relative;
+    }
+    .header {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    .header h1 {
+      font-size: 26px;
+      font-weight: 800;
+      color: #0f2d59;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      margin-bottom: 4px;
+    }
+    .header p {
+      font-size: 15px;
+      font-weight: 600;
+      color: #52606d;
+    }
+
+    .main-grid {
+      display: grid;
+      grid-template-columns: 460px 740px 510px;
+      gap: 25px;
+      height: 910px;
+      position: relative;
+    }
+
+    /* Swimlanes */
+    .swimlane {
+      border-radius: 12px;
+      border: 2px solid;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.03);
+      position: relative;
+    }
+    .sw-title {
+      font-size: 15px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      padding-bottom: 12px;
+      margin-bottom: 16px;
+      border-bottom: 2px solid;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* Temas de Swimlane */
+    .sw-clientes { background: #f0f7fc; border-color: #2b6cb0; }
+    .sw-clientes .sw-title { color: #1a4971; border-color: #90cdf4; }
+
+    .sw-ventas { background: #fffbf0; border-color: #d69e2e; }
+    .sw-ventas .sw-title { color: #744210; border-color: #fbd38d; }
+
+    .sw-produccion { background: #f0fdf4; border-color: #2f855a; }
+    .sw-produccion .sw-title { color: #1c4532; border-color: #9ae6b4; }
+
+    /* Estructura interna de tablas */
+    .table-card {
+      background: #ffffff;
+      border-radius: 8px;
+      border: 1.5px solid;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.04);
+      margin-bottom: 14px;
+      overflow: hidden;
+      font-size: 12px;
+    }
+    .table-header {
+      padding: 6px 12px;
+      font-weight: 800;
+      font-size: 13px;
+      letter-spacing: 0.3px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      color: #ffffff;
+    }
+    .table-body {
+      padding: 8px 12px;
+      line-height: 1.55;
+      color: #2d3748;
+    }
+    .pk { font-weight: 800; color: #c53030; }
+    .fk { font-weight: 700; color: #2b6cb0; }
+    .attr { color: #4a5568; }
+
+    /* Tarjetas de Clientes */
+    .sw-clientes .table-card { border-color: #cbd5e0; }
+    .sw-clientes .table-header { background: #2b6cb0; }
+
+    /* Tarjetas de Ventas */
+    .sw-ventas .table-card { border-color: #cbd5e0; }
+    .sw-ventas .table-header { background: #d69e2e; color: #2d3748; font-weight: 900; }
+    .sw-ventas .table-card.highlight { border: 2.5px solid #d69e2e; box-shadow: 0 4px 12px rgba(214, 158, 46, 0.15); }
+
+    /* Tarjetas de Producción */
+    .sw-produccion .table-card { border-color: #cbd5e0; }
+    .sw-produccion .table-header { background: #2f855a; }
+    .sw-produccion .table-card.highlight { border: 2.5px solid #2f855a; box-shadow: 0 4px 12px rgba(47, 133, 90, 0.15); }
+
+    /* Layout interno de Ventas (2 columnas) */
+    .ventas-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 15px;
+    }
+
+    /* Layout interno de Producción (2 columnas) */
+    .prod-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    /* Leyenda inferior */
+    .legend-bar {
+      margin-top: 14px;
+      background: #f8fafc;
+      border: 1.5px solid #cbd5e1;
+      border-radius: 8px;
+      padding: 10px 20px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 25px;
+      font-size: 13px;
+      color: #475569;
+      font-weight: 600;
+    }
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .badge-pk { background: #fed7d7; color: #c53030; padding: 2px 6px; border-radius: 4px; font-weight: 800; font-size: 11px; }
+    .badge-fk { background: #bee3f8; color: #2b6cb0; padding: 2px 6px; border-radius: 4px; font-weight: 800; font-size: 11px; }
+
+    /* Conectores / flechas visuales estilizadas */
+    .rel-tag {
+      display: inline-block;
+      font-size: 10.5px;
+      background: #edf2f7;
+      color: #4a5568;
+      padding: 1px 5px;
+      border-radius: 3px;
+      margin-top: 2px;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="header">
+    <h1>AdventureWorks2022 — Panorama General de la Base Transaccional</h1>
+    <p>Vista simplificada de las tablas centrales y relaciones para Clientes, Ventas y Producción</p>
+  </div>
+
+  <div class="main-grid">
+
+    <!-- 1. SWIMLANE: CLIENTES Y UBICACIÓN -->
+    <div class="swimlane sw-clientes">
+      <div class="sw-title">
+        <span>Clientes y Ubicación</span>
+        <span style="font-size:12px; opacity:0.8; font-weight:500;">(Person / Sales)</span>
+      </div>
+
+      <div class="table-card">
+        <div class="table-header">Person.Person</div>
+        <div class="table-body">
+          <div><span class="pk">(PK)</span> BusinessEntityID</div>
+          <div><span class="attr">FirstName, LastName, PersonType</span></div>
+          <div class="rel-tag">19.972 registros · Identidades maestras</div>
+        </div>
+      </div>
+
+      <div class="table-card">
+        <div class="table-header">Sales.Customer</div>
+        <div class="table-body">
+          <div><span class="pk">(PK)</span> CustomerID</div>
+          <div><span class="fk">(FK)</span> PersonID &rarr; Person.Person</div>
+          <div><span class="fk">(FK)</span> StoreID &rarr; Sales.Store</div>
+          <div><span class="fk">(FK)</span> TerritoryID &rarr; Sales.SalesTerritory</div>
+          <div class="rel-tag">19.820 cuentas (19.119 personas, 701 tiendas)</div>
+        </div>
+      </div>
+
+      <div class="table-card">
+        <div class="table-header">Sales.Store</div>
+        <div class="table-body">
+          <div><span class="pk">(PK)</span> BusinessEntityID</div>
+          <div><span class="attr">Name</span></div>
+          <div><span class="fk">(FK)</span> SalesPersonID &rarr; Sales.SalesPerson</div>
+          <div class="rel-tag">701 tiendas comerciales B2B</div>
+        </div>
+      </div>
+
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+        <div class="table-card">
+          <div class="table-header">Person.Address</div>
+          <div class="table-body">
+            <div><span class="pk">(PK)</span> AddressID</div>
+            <div><span class="attr">City, PostalCode</span></div>
+            <div><span class="fk">(FK)</span> StateProvinceID</div>
+          </div>
+        </div>
+        <div class="table-card">
+          <div class="table-header">StateProvince</div>
+          <div class="table-body">
+            <div><span class="pk">(PK)</span> StateProvinceID</div>
+            <div><span class="attr">Name</span></div>
+            <div><span class="fk">(FK)</span> TerritoryID</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="table-card">
+        <div class="table-header">Person.BusinessEntityAddress</div>
+        <div class="table-body">
+          <div><span class="pk">(PK)</span> BusinessEntityID + AddressID + AddressTypeID</div>
+          <div class="rel-tag">Vincula personas y tiendas con domicilios</div>
+        </div>
+      </div>
+
+      <div class="table-card">
+        <div class="table-header">Person.CountryRegion</div>
+        <div class="table-body">
+          <div><span class="pk">(PK)</span> CountryRegionCode, Name</div>
+          <div class="rel-tag">Catálogo maestro de países (6 mercados clave)</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 2. SWIMLANE: VENTAS -->
+    <div class="swimlane sw-ventas">
+      <div class="sw-title">
+        <span>Ventas y Transacciones</span>
+        <span style="font-size:12px; opacity:0.8; font-weight:600;">(Sales)</span>
+      </div>
+
+      <!-- Cabecera y Detalle de Venta -->
+      <div class="table-card highlight" style="margin-bottom:16px;">
+        <div class="table-header">Sales.SalesOrderHeader (Cabecera de Órdenes)</div>
+        <div class="table-body" style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+          <div>
+            <div><span class="pk">(PK)</span> SalesOrderID</div>
+            <div><span class="attr">OrderDate, DueDate, ShipDate</span></div>
+            <div><span class="attr">OnlineOrderFlag, Status</span></div>
+            <div><span class="fk">(FK)</span> CustomerID &rarr; Sales.Customer</div>
+          </div>
+          <div>
+            <div><span class="fk">(FK)</span> SalesPersonID &rarr; SalesPerson</div>
+            <div><span class="fk">(FK)</span> TerritoryID &rarr; SalesTerritory</div>
+            <div><span class="attr">SubTotal, TaxAmt, Freight</span></div>
+            <div><strong style="color:#d97706;">TotalDue</strong> (\$123.216.786 total)</div>
+          </div>
+        </div>
+        <div style="background:#fef3c7; padding:4px 12px; font-size:11.5px; font-weight:700; color:#92400e;">
+          31.465 órdenes registradas (27.659 online / 3.806 con ejecutivo)
+        </div>
+      </div>
+
+      <div class="table-card highlight" style="margin-bottom:16px;">
+        <div class="table-header">Sales.SalesOrderDetail (Líneas de Detalle)</div>
+        <div class="table-body" style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+          <div>
+            <div><span class="pk">(PK)</span> SalesOrderID + SalesOrderDetailID</div>
+            <div><span class="fk">(FK)</span> SalesOrderID &rarr; SalesOrderHeader</div>
+            <div><span class="fk">(FK)</span> ProductID &rarr; Production.Product</div>
+          </div>
+          <div>
+            <div><span class="attr">OrderQty, UnitPrice</span></div>
+            <div><span class="attr">UnitPriceDiscount</span></div>
+            <div><strong style="color:#d97706;">LineTotal</strong></div>
+          </div>
+        </div>
+        <div style="background:#fef3c7; padding:4px 12px; font-size:11.5px; font-weight:700; color:#92400e;">
+          121.317 registros de detalle · 274.914 unidades vendidas
+        </div>
+      </div>
+
+      <!-- Territorios, Vendedores, Empleados, Promociones -->
+      <div class="ventas-grid">
+        <div class="table-card">
+          <div class="table-header">Sales.SalesTerritory</div>
+          <div class="table-body">
+            <div><span class="pk">(PK)</span> TerritoryID</div>
+            <div><span class="attr">Name, Group, CountryRegionCode</span></div>
+            <div><span class="attr">SalesYTD, SalesLastYear</span></div>
+            <div class="rel-tag">10 territorios (Norteamérica, Europa, Pacífico)</div>
+          </div>
+        </div>
+
+        <div class="table-card">
+          <div class="table-header">Sales.SalesPerson</div>
+          <div class="table-body">
+            <div><span class="pk">(PK)</span> BusinessEntityID</div>
+            <div><span class="fk">(FK)</span> TerritoryID &rarr; SalesTerritory</div>
+            <div><span class="attr">SalesQuota, Bonus, CommissionPct</span></div>
+            <div class="rel-tag">17 ejecutivos de venta asignados</div>
+          </div>
+        </div>
+
+        <div class="table-card">
+          <div class="table-header">HumanResources.Employee</div>
+          <div class="table-body">
+            <div><span class="pk">(PK)</span> BusinessEntityID</div>
+            <div><span class="attr">NationalIDNumber, JobTitle, HireDate</span></div>
+            <div class="rel-tag">Datos laborales de los ejecutivos</div>
+          </div>
+        </div>
+
+        <div class="table-card">
+          <div class="table-header">SpecialOfferProduct</div>
+          <div class="table-body">
+            <div><span class="pk">(PK)</span> SpecialOfferID + ProductID</div>
+            <div><span class="fk">(FK)</span> SpecialOfferID &rarr; SpecialOffer</div>
+            <div class="rel-tag">Descuentos por volumen y promociones</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 3. SWIMLANE: PRODUCCIÓN -->
+    <div class="swimlane sw-produccion">
+      <div class="sw-title">
+        <span>Producción e Inventarios</span>
+        <span style="font-size:12px; opacity:0.8; font-weight:600;">(Production)</span>
+      </div>
+
+      <!-- Producto Maestro -->
+      <div class="table-card highlight">
+        <div class="table-header">Production.Product (Catálogo)</div>
+        <div class="table-body">
+          <div><span class="pk">(PK)</span> ProductID</div>
+          <div><span class="attr">Name, ProductNumber, MakeFlag</span></div>
+          <div><span class="attr">FinishedGoodsFlag, SafetyStockLevel</span></div>
+          <div><strong style="color:#2f855a;">StandardCost, ListPrice</strong></div>
+          <div><span class="fk">(FK)</span> ProductSubcategoryID</div>
+          <div class="rel-tag">504 productos (295 terminados para venta)</div>
+        </div>
+      </div>
+
+      <div class="prod-grid">
+        <div class="table-card">
+          <div class="table-header">ProductSubcategory</div>
+          <div class="table-body">
+            <div><span class="pk">(PK)</span> ProductSubcategoryID</div>
+            <div><span class="fk">(FK)</span> ProductCategoryID</div>
+            <div><span class="attr">Name</span> (37 líneas)</div>
+          </div>
+        </div>
+        <div class="table-card">
+          <div class="table-header">ProductCategory</div>
+          <div class="table-body">
+            <div><span class="pk">(PK)</span> ProductCategoryID</div>
+            <div><span class="attr">Name</span> (4 categorías)</div>
+            <div class="rel-tag">Bicicletas, Piezas, Ropa, Accesorios</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Inventario y Ubicaciones -->
+      <div class="prod-grid">
+        <div class="table-card">
+          <div class="table-header">ProductInventory</div>
+          <div class="table-body">
+            <div><span class="pk">(PK)</span> ProductID + LocationID</div>
+            <div><span class="attr">Shelf, Bin, Quantity</span></div>
+            <div class="rel-tag">335.974 unidades físicas</div>
+          </div>
+        </div>
+        <div class="table-card">
+          <div class="table-header">Production.Location</div>
+          <div class="table-body">
+            <div><span class="pk">(PK)</span> LocationID, Name</div>
+            <div><span class="attr">CostRate, Availability</span></div>
+            <div class="rel-tag">14 almacenes y centros</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Órdenes de Trabajo y Rutas -->
+      <div class="table-card">
+        <div class="table-header">Production.WorkOrder</div>
+        <div class="table-body">
+          <div><span class="pk">(PK)</span> WorkOrderID</div>
+          <div><span class="fk">(FK)</span> ProductID &rarr; Production.Product</div>
+          <div><span class="attr">OrderQty</span> (4.507.721 unidades)</div>
+          <div><span class="attr">ScrappedQty</span> (10.651 merma · 0,24%)</div>
+          <div><span class="fk">(FK)</span> ScrapReasonID &rarr; ScrapReason</div>
+          <div class="rel-tag">72.591 órdenes de manufactura ejecutadas</div>
+        </div>
+      </div>
+
+      <div class="table-card">
+        <div class="table-header">Production.WorkOrderRouting</div>
+        <div class="table-body">
+          <div><span class="pk">(PK)</span> WorkOrderID + ProductID + OperationSequence</div>
+          <div><span class="fk">(FK)</span> LocationID &rarr; Location</div>
+          <div><span class="attr">ScheduledCost, ActualCost, ActualResourceHrs</span></div>
+          <div class="rel-tag">67.131 etapas de ruta de fabricación</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- LEYENDA -->
+  <div class="legend-bar">
+    <div class="legend-item"><span class="badge-pk">(PK)</span> Clave Primaria</div>
+    <div class="legend-item"><span class="badge-fk">(FK)</span> Clave Foránea</div>
+    <div class="legend-item"><strong>Flujo Central:</strong> Cliente &rarr; Encabezado Venta &rarr; Detalle Venta &rarr; Producto &rarr; Orden de Trabajo &rarr; Inventario</div>
+    <div class="legend-item" style="color:#64748b; font-size:12px;">Vista simplificada representativa de las 71 tablas de usuario de AdventureWorks2022</div>
+  </div>
+
+</body>
+</html>

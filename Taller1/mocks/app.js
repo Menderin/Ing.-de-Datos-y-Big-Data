@@ -21,7 +21,8 @@ const meta={clientes:{label:'Clientes',color:'#2563eb'},produccion:{label:'Produ
 const yearFactor={Todos:1,'2011':.62,'2012':.83,'2013':1.08,'2014':1.17};
 const territoryFactor={Todos:1,Suroeste:.27,Noroeste:.19,Canadá:.16,Australia:.15,'Reino Unido':.12};
 const colors=['#2563eb','#059669','#d97706','#7c3aed','#dc2626','#0891b2'];
-let active='v1';
+const urlReport = new URLSearchParams(window.location.search).get('report');
+let active = reports.some(r => r.id === urlReport) ? urlReport : 'v1';
 
 function format(value,type){if(type==='m')return value>=1e6?'$'+(value/1e6).toLocaleString('es-CL',{maximumFractionDigits:1})+' M':'$'+Math.round(value).toLocaleString('es-CL');if(type==='p')return value.toLocaleString('es-CL',{maximumFractionDigits:2})+' %';return value.toLocaleString('es-CL',{maximumFractionDigits:2});}
 function factor(){return yearFactor[document.querySelector('#year-filter').value]*territoryFactor[document.querySelector('#territory-filter').value];}

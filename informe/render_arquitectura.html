@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Arquitectura de la Solución - Modo Claro</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, Helvetica, Arial, sans-serif; }
+    body {
+      background-color: #ffffff;
+      width: 1500px;
+      height: 920px;
+      padding: 30px 40px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .header {
+      text-align: center;
+      margin-bottom: 25px;
+    }
+    .header h1 {
+      font-size: 26px;
+      font-weight: 800;
+      color: #0f2d59;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      margin-bottom: 6px;
+    }
+    .header p {
+      font-size: 15px;
+      font-weight: 600;
+      color: #475569;
+      letter-spacing: 0.3px;
+    }
+    .pipeline-container {
+      display: flex;
+      align-items: stretch;
+      justify-content: space-between;
+      position: relative;
+      margin-bottom: 25px;
+      height: 480px;
+    }
+    .col {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      border-radius: 12px;
+      background: #ffffff;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+      border: 2px solid;
+      overflow: hidden;
+      max-width: 325px;
+    }
+    .col-header {
+      padding: 16px 12px;
+      text-align: center;
+      color: #ffffff;
+      font-weight: 700;
+      font-size: 15px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+    .col-header small {
+      font-size: 11px;
+      opacity: 0.9;
+      font-weight: 500;
+    }
+    .col-body {
+      padding: 24px 20px;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-start;
+      font-size: 14px;
+      color: #1e293b;
+      line-height: 1.5;
+    }
+    .col-title {
+      font-size: 20px;
+      font-weight: 800;
+      margin-bottom: 4px;
+    }
+    .col-subtitle {
+      font-size: 14px;
+      font-weight: 600;
+      margin-bottom: 20px;
+      color: #64748b;
+    }
+    .col-body ul {
+      list-style: none;
+      padding-left: 0;
+    }
+    .col-body ul li {
+      position: relative;
+      padding-left: 18px;
+      margin-bottom: 10px;
+      font-size: 13.5px;
+      color: #334155;
+    }
+    .col-body ul li::before {
+      content: "•";
+      position: absolute;
+      left: 2px;
+      font-weight: bold;
+      font-size: 16px;
+    }
+    .step-title {
+      font-size: 13px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 3px;
+    }
+    .step-block {
+      margin-bottom: 18px;
+    }
+    .step-block p {
+      font-size: 13px;
+      color: #475569;
+    }
+
+    /* Temas de columna */
+    .c-oltp { border-color: #0f2d59; }
+    .c-oltp .col-header { background: #0f2d59; }
+    .c-oltp .col-title { color: #0f2d59; }
+    .c-oltp ul li::before { color: #0f2d59; }
+
+    .c-etl { border-color: #581c87; }
+    .c-etl .col-header { background: #581c87; }
+    .c-etl .step-title { color: #581c87; }
+
+    .c-dw { border-color: #166534; }
+    .c-dw .col-header { background: #166534; }
+    .c-dw .col-title { color: #166534; }
+    .c-dw ul li::before { color: #166534; }
+
+    .c-bi { border-color: #b45309; }
+    .c-bi .col-header { background: #b45309; }
+    .c-bi .col-title { color: #d97706; }
+    .c-bi ul li::before { color: #b45309; }
+
+    /* Flechas conectoras */
+    .arrow-container {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 45px;
+    }
+    .arrow-container svg {
+      width: 32px;
+      height: 32px;
+      fill: #0f2d59;
+    }
+
+    /* Capas transversales */
+    .transversal {
+      border: 2px solid #cbd5e1;
+      border-radius: 12px;
+      background: #f8fafc;
+      padding: 16px 24px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.03);
+    }
+    .transversal-title {
+      font-size: 14px;
+      font-weight: 800;
+      color: #0f2d59;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .transversal-title::before {
+      content: "";
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      background: #0f2d59;
+      border-radius: 50%;
+    }
+    .trans-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 20px;
+    }
+    .trans-card {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 12px 16px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.02);
+    }
+    .trans-card h3 {
+      font-size: 13px;
+      font-weight: 700;
+      color: #0f2d59;
+      margin-bottom: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+    }
+    .trans-card p {
+      font-size: 12px;
+      color: #475569;
+      line-height: 1.45;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="header">
+    <h1>Arquitectura Básica de Business Intelligence</h1>
+    <p>Flujo de datos de extremo a extremo para el sistema de reportabilidad</p>
+  </div>
+
+  <div class="pipeline-container">
+    <!-- 1. FUENTE DE DATOS -->
+    <div class="col c-oltp">
+      <div class="col-header">
+        <span>1. Fuente de Datos</span>
+        <small>Capa Transaccional</small>
+      </div>
+      <div class="col-body">
+        <div class="col-title">SQL Server</div>
+        <div class="col-subtitle">Base Transaccional (OLTP)</div>
+        <p style="font-size:12.5px; color:#475569; margin-bottom:12px; font-weight:600;">Datos operacionales normalizados:</p>
+        <ul>
+          <li><strong>Ventas:</strong> Pedidos, líneas de detalle y transacciones comerciales.</li>
+          <li><strong>Clientes:</strong> Personas naturales, tiendas asociadas y contactos.</li>
+          <li><strong>Productos:</strong> Catálogo maestro, categorías y piezas.</li>
+          <li><strong>Inventario:</strong> Existencias por almacén y ubicaciones físicas.</li>
+          <li><strong>Producción:</strong> Órdenes de manufactura y centros de mecanizado.</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- FLECHA 1 -->
+    <div class="arrow-container">
+      <svg viewBox="0 0 24 24"><path d="M5 12h14M13 5l7 7-7 7" stroke="#0f2d59" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>
+    </div>
+
+    <!-- 2. ETL -->
+    <div class="col c-etl">
+      <div class="col-header">
+        <span>2. ETL</span>
+        <small>Extracción · Transformación · Carga</small>
+      </div>
+      <div class="col-body">
+        <div class="step-block">
+          <div class="step-title">Extracción</div>
+          <p>Captura de datos brutos desde la fuente SQL Server vía consultas parametrizadas e incrementales.</p>
+        </div>
+        <div class="step-block">
+          <div class="step-title">Transformación</div>
+          <p>Limpieza de datos, tipificación, tratamiento de nulos, generación de claves sustitutas y cálculo de métricas de negocio.</p>
+        </div>
+        <div class="step-block">
+          <div class="step-title">Carga</div>
+          <p>Inserción orquestada en las tablas de hechos y dimensiones del Data Warehouse garantizando integridad referencial.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- FLECHA 2 -->
+    <div class="arrow-container">
+      <svg viewBox="0 0 24 24"><path d="M5 12h14M13 5l7 7-7 7" stroke="#0f2d59" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>
+    </div>
+
+    <!-- 3. REPOSITORIO DE DATOS -->
+    <div class="col c-dw">
+      <div class="col-header">
+        <span>3. Repositorio de Datos</span>
+        <small>Almacén Analítico</small>
+      </div>
+      <div class="col-body">
+        <div class="col-title">SQL Server</div>
+        <div class="col-subtitle">Data Warehouse (OLAP)</div>
+        <ul>
+          <li><strong>Modelo Dimensional:</strong> Esquema en estrella con tablas de hechos y dimensiones conformadas.</li>
+          <li><strong>Datos Integrados:</strong> Información histórica consolidada de todas las áreas de la empresa.</li>
+          <li><strong>Históricos:</strong> Preservación de la evolución temporal del negocio.</li>
+          <li><strong>Calidad y Consistencia:</strong> Datos depurados y validados para análisis estratégico.</li>
+          <li><strong>Optimización Analítica:</strong> Estructuras orientadas al rendimiento en agregaciones y consultas masivas.</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- FLECHA 3 -->
+    <div class="arrow-container">
+      <svg viewBox="0 0 24 24"><path d="M5 12h14M13 5l7 7-7 7" stroke="#0f2d59" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>
+    </div>
+
+    <!-- 4. VISUALIZACIÓN -->
+    <div class="col c-bi">
+      <div class="col-header">
+        <span>4. Visualización</span>
+        <small>Consumo y Dashboards</small>
+      </div>
+      <div class="col-body">
+        <div class="col-title">Power BI</div>
+        <div class="col-subtitle">Dashboards e Informes</div>
+        <ul>
+          <li><strong>Análisis Interactivo:</strong> Filtros cruzados dinámicos por periodo, territorio y categoría.</li>
+          <li><strong>Métricas y KPIs:</strong> Indicadores clave sintetizados con medidas DAX avanzadas.</li>
+          <li><strong>Reportes Ejecutivos:</strong> 15 vistas analíticas de Clientes, Producción y Ventas.</li>
+          <li><strong>Autonomía y Drill Down:</strong> Exploración multinivel desde agregados macro hasta el detalle.</li>
+          <li><strong>Toma de Decisiones:</strong> Información estratégica accesible para la alta dirección.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- CAPAS TRANSVERSALES -->
+  <div class="transversal">
+    <div class="transversal-title">Capas Transversales de Soporte y Gobierno</div>
+    <div class="trans-grid">
+      <div class="trans-card">
+        <h3>Seguridad</h3>
+        <p>Control de acceso basado en roles, segregación de cuentas analíticas y Row Level Security (RLS) por territorio comercial.</p>
+      </div>
+      <div class="trans-card">
+        <h3>Gobierno de Datos</h3>
+        <p>Diccionario de metadatos estandarizado, trazabilidad de linaje (data lineage) y controles de unicidad y calidad.</p>
+      </div>
+      <div class="trans-card">
+        <h3>Monitoreo</h3>
+        <p>Auditoría de ejecución de pipelines ETL, control de tiempos de carga y alertas automáticas ante fallos o retrasos.</p>
+      </div>
+      <div class="trans-card">
+        <h3>Backup y Recuperación</h3>
+        <p>Respaldos versionados fuera del contenedor, alta disponibilidad y políticas de recuperación (RPO y RTO definidos).</p>
+      </div>
+    </div>
+  </div>
+
+</body>
+</html>
