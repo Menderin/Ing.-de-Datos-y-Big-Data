@@ -90,7 +90,7 @@ La solución analítica para \textbf{Adventure Works Cycles} se estructura en un
 \begin{figure}[H]
     \centering
     \includegraphics[width=0.85\textwidth]{figuras/arquitectura_propuesta.png}
-    \caption{Arquitectura propuesta para la plataforma de reportabilidad (modo claro).}
+    \caption{Arquitectura propuesta para la plataforma de reportabilidad.}
     \label{fig:arquitectura}
 \end{figure}
 
@@ -119,9 +119,9 @@ A diferencia del diagrama referencial preliminar de la cátedra, \textbf{se excl
 \section{Base de Datos Transaccional Implementada}
 
 \subsection{Entorno y Puesta en Marcha en Docker}
-Para garantizar portabilidad y reproducibilidad, la base de datos transaccional se implementó utilizando \textbf{Docker Desktop} mediante \textit{SQL Server 2022 Developer Edition} (\texttt{mcr.microsoft.com/mssql/server:2022-latest}), configurando persistencia de datos en el volumen Docker \texttt{bigdata-sqlserver-data} y exponiendo el puerto estándar \texttt{1433}.
+Para garantizar portabilidad y reproducibilidad, la base de datos transaccional se implementó utilizando \textbf{Docker Desktop} mediante \textit{SQL Server 2022 Developer Edition}, configurando persistencia de datos en el volumen Docker \texttt{bigdata-sqlserver-data} y exponiendo el puerto estándar \texttt{1433}.
 
-La base se restauró desde el respaldo oficial \texttt{AdventureWorks2022.bak} (201 MB). La base de datos resultante se encuentra en estado operativo \textbf{ONLINE}.
+La base se restauró desde el respaldo oficial \texttt{AdventureWorks2022.bak}.
 
 \subsection{Verificación de Esquemas y Registros}
 La base cuenta con \textbf{71 tablas de usuario} agrupadas en 6 esquemas funcionales:
@@ -161,15 +161,15 @@ En la Figura \ref{fig:ssms} se constata la conexión y despliegue de las tablas 
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=0.75\textwidth]{figuras/ssms_tablas.png}
+    \includegraphics[width=0.68\textwidth]{figuras/ssms_tablas.png}
     \caption{Base de datos AdventureWorks2022 ONLINE verificada en SSMS.}
     \label{fig:ssms}
 \end{figure}
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=0.92\textwidth]{figuras/modelo_relacional.png}
-    \caption{Diagrama relacional simplificado de las entidades transaccionales centrales (modo claro).}
+    \includegraphics[width=0.80\textwidth]{figuras/modelo_relacional.png}
+    \caption{Diagrama relacional simplificado de las entidades transaccionales centrales.}
     \label{fig:modelo_relacional}
 \end{figure}
 

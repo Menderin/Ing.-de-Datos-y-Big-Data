@@ -3,6 +3,17 @@
 .env.*
 !.env.example
 
+# Instrucciones locales para asistentes de desarrollo
+AGENTS.md
+**/AGENTS.md
+CLAUDE.md
+**/CLAUDE.md
+GEMINI.md
+**/GEMINI.md
+.cursorrules
+.cursor/
+.codex/
+
 # Backups y archivos físicos de bases de datos
 *.bak
 *.bacpac
@@ -28,6 +39,7 @@ Taller1/mocks/dashboard/
 Docs/slide5.png
 
 # Logs y temporales
+tmp/
 *.log
 *.tmp
 *.temp
