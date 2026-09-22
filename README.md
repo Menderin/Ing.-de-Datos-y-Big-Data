@@ -30,11 +30,16 @@ El trabajo actual corresponde a la **Entrega 1** e incluye el diseño de la arqu
 .
 ├── Data/                 Backup local de AdventureWorks
 ├── Docs/                 Material oficial del taller
+├── database/
+│   ├── dw/               Scripts DDL, carga y auditoría del Data Warehouse
+│   └── etl/              Orquestador en Python (run_etl.py)
 ├── evidencia/            Capturas utilizadas en el informe
-├── Taller1/              Documentación y entregables
-│   └── mocks/            Mockups navegables de los 15 reportes
+├── reports/              Diseño técnico final de los 15 reportes
+├── Taller1/              Entregables y mockups interactivos (Entrega 1)
+├── Taller2/              Documentación de modelo dimensional y ETL (Entrega 2)
 ├── docker-compose.yml    SQL Server 2022 en Docker
-└── recuperarBD.ps1       Restauración automática del backup
+├── recuperarBD.ps1       Restauración automática del backup transaccional
+└── ejecutarETL.ps1       Ejecución automatizada del ETL y creación del DW
 ```
 
 ## Levantar el proyecto
@@ -77,7 +82,7 @@ docker compose logs -f sqlserver
 
 SQL Server estará disponible en `localhost,1433`.
 
-### 4. Restaurar AdventureWorks2022
+### 4. Restaurar la base transaccional (AdventureWorks2022)
 
 Ejecutar desde PowerShell:
 
@@ -86,11 +91,26 @@ Set-ExecutionPolicy -Scope Process Bypass
 .\recuperarBD.ps1
 ```
 
-El script restaura `Data/AdventureWorks2022.bak` y deja la base `AdventureWorks2022` disponible en SQL Server.
+El script restaura `Data/AdventureWorks2022.bak` y deja la base `AdventureWorks2022` disponible y en línea en SQL Server.
 
-> Si la base ya existe, el script la elimina y la restaura nuevamente desde el backup.
+### 5. Ejecutar el Pipeline ETL y Crear el Data Warehouse (AdventureWorksDW)
 
-### 5. Conectarse desde SSMS
+Para crear el esquema dimensional en estrella, cargar las dimensiones conformadas, poblar las tablas de hechos y validar la cuadratura de datos, ejecutar:
+
+**En Windows (PowerShell):**
+```powershell
+Set-ExecutionPolicy -Scope Process Bypass
+.\ejecutarETL.ps1
+```
+
+**Alternativa multiplataforma (Python):**
+```bash
+python3 database/etl/run_etl.py
+```
+
+El pipeline se ejecuta en ~5 segundos y deja operativa la base analítica **`AdventureWorksDW`** con 121.317 registros en `FactSales`, 72.591 en `FactWorkOrder`, 67.131 en `FactWorkOrderRouting`, 1.069 en `FactInventorySnapshot` y cero registros huérfanos.
+
+### 6. Conectarse desde SSMS
 
 Utilizar los siguientes parámetros:
 
@@ -103,23 +123,15 @@ Cifrado: obligatorio
 Certificado de servidor de confianza: activado
 ```
 
-Después de conectarse, actualizar la carpeta **Bases de datos**. La base `AdventureWorks2022` debería aparecer en estado operativo.
+Después de conectarse, ambas bases de datos (`AdventureWorks2022` y `AdventureWorksDW`) estarán disponibles y operativas.
 
-## Abrir los mockups
+## Diseño de Reportes y Mockups
 
-Abrir directamente en Chrome o Edge:
-
-```text
-Taller1/mocks/index.html
-```
-
-Los mockups no requieren instalación ni servidor. Contienen 15 vistas navegables:
-
-- cinco reportes de clientes;
-- cinco reportes de procesos y producción;
-- cinco reportes de ventas.
-
-Los filtros son funcionales, pero los valores se presentan como datos de muestra para representar el comportamiento esperado de los futuros reportes en Power BI.
+- **Especificación Técnica Final:** Consultar [reports/diseno_final_reportes.md](reports/diseno_final_reportes.md) para la ficha técnica completa de los 15 reportes (KPIs, fórmulas DAX, tablas del DW y jerarquías de Drill Down).
+- **Mockups Interactivos:** Abrir directamente en Chrome o Edge:
+  ```text
+  Taller1/mocks/index.html
+  ```
 
 ## Detener el entorno
 
@@ -133,4 +145,4 @@ Para iniciarlo nuevamente:
 docker compose start
 ```
 
-Los datos restaurados permanecen en el volumen Docker `bigdata-sqlserver-data`.
+Los datos permanecen en el volumen Docker `bigdata-sqlserver-data`.
