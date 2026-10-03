@@ -195,4 +195,42 @@ LEFT JOIN dbo.DimCustomer dc ON f.CustomerKey = dc.CustomerKey
 LEFT JOIN dbo.DimProduct dp ON f.ProductKey = dp.ProductKey
 LEFT JOIN dbo.DimTerritory dt ON f.TerritoryKey = dt.TerritoryKey
 LEFT JOIN dbo.DimDate dd ON f.OrderDateKey = dd.DateKey;
+
+-- ------------------------------------------------------------------------------
+-- 4. Huerfanos en las demas tablas de hechos y calidad de dimensiones
+-- ------------------------------------------------------------------------------
+SELECT 'FactSales (vendedor/oferta/fechas entrega)' AS Control,
+    SUM(CASE WHEN sp.SalesPersonKey IS NULL THEN 1 ELSE 0 END)
+  + SUM(CASE WHEN so.SpecialOfferKey IS NULL THEN 1 ELSE 0 END)
+  + SUM(CASE WHEN dd.DateKey IS NULL THEN 1 ELSE 0 END)
+  + SUM(CASE WHEN ds.DateKey IS NULL THEN 1 ELSE 0 END) AS Huerfanos
+FROM dbo.FactSales f
+LEFT JOIN dbo.DimSalesPerson sp ON f.SalesPersonKey = sp.SalesPersonKey
+LEFT JOIN dbo.DimSpecialOffer so ON f.SpecialOfferKey = so.SpecialOfferKey
+LEFT JOIN dbo.DimDate dd ON f.DueDateKey = dd.DateKey
+LEFT JOIN dbo.DimDate ds ON f.ShipDateKey = ds.DateKey
+UNION ALL
+SELECT 'FactWorkOrder',
+    SUM(CASE WHEN dp.ProductKey IS NULL THEN 1 ELSE 0 END)
+  + SUM(CASE WHEN sr.ScrapReasonKey IS NULL THEN 1 ELSE 0 END)
+  + SUM(CASE WHEN d1.DateKey IS NULL THEN 1 ELSE 0 END)
+  + SUM(CASE WHEN d2.DateKey IS NULL THEN 1 ELSE 0 END)
+FROM dbo.FactWorkOrder f
+LEFT JOIN dbo.DimProduct dp ON f.ProductKey = dp.ProductKey
+LEFT JOIN dbo.DimScrapReason sr ON f.ScrapReasonKey = sr.ScrapReasonKey
+LEFT JOIN dbo.DimDate d1 ON f.StartDateKey = d1.DateKey
+LEFT JOIN dbo.DimDate d2 ON f.EndDateKey = d2.DateKey
+UNION ALL
+SELECT 'FactWorkOrderRouting',
+    SUM(CASE WHEN dp.ProductKey IS NULL THEN 1 ELSE 0 END)
+  + SUM(CASE WHEN dl.LocationKey IS NULL THEN 1 ELSE 0 END)
+FROM dbo.FactWorkOrderRouting f
+LEFT JOIN dbo.DimProduct dp ON f.ProductKey = dp.ProductKey
+LEFT JOIN dbo.DimLocation dl ON f.LocationKey = dl.LocationKey
+UNION ALL
+SELECT 'DimCustomer sin direccion (esperado 0)', COUNT(*)
+FROM dbo.DimCustomer WHERE City = 'No Informado' OR CountryRegionName = 'No Informado'
+UNION ALL
+SELECT 'DimCustomer sin territorio (esperado 0)', COUNT(*)
+FROM dbo.DimCustomer WHERE TerritoryName = 'No Informado';
 GO

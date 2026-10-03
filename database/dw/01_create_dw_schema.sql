@@ -69,7 +69,9 @@ CREATE TABLE dbo.DimCustomer (
     City VARCHAR(50) NOT NULL,
     StateProvinceName VARCHAR(50) NOT NULL,
     CountryRegionName VARCHAR(50) NOT NULL,
-    TerritoryID INT NOT NULL
+    TerritoryID INT NOT NULL,
+    TerritoryName VARCHAR(50) NOT NULL,          -- Territorio del cliente (desnormalizado para Power BI)
+    TerritoryGroup VARCHAR(50) NOT NULL          -- North America / Europe / Pacific
 );
 CREATE UNIQUE NONCLUSTERED INDEX IX_DimCustomer_CustomerID ON dbo.DimCustomer(CustomerID);
 

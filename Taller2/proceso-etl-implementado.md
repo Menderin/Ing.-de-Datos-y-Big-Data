@@ -25,7 +25,7 @@ El proceso de Extracción, Transformación y Carga (ETL) fue diseñado bajo el p
 
 ### 2.1 Enfoque Set-Based en Motor Relacional
 - En lugar de extraer fila por fila a través de la red (lo que implicaría serializar más de 300.000 registros y generar cuellos de botella por latencia de socket), el pipeline ejecuta transformaciones basadas en conjuntos directamente en el motor SQL Server.
-- **Rendimiento:** Carga completa en **menos de 5 segundos**.
+- **Rendimiento:** Carga completa en aproximadamente **5 a 7 segundos**.
 
 ### 2.2 Tratamiento de Fechas y Clave Especial `-1`
 - Para fechas nulas o no aplicables (como `ShipDate` en órdenes no despachadas o `ActualEndDate` en operaciones en curso), se asigna la clave `DateKey = -1` ('1900-01-01', 'No Aplica').

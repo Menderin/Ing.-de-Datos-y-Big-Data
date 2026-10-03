@@ -97,9 +97,11 @@ INSERT INTO dbo.DimCustomer (
     City,
     StateProvinceName,
     CountryRegionName,
-    TerritoryID
+    TerritoryID,
+    TerritoryName,
+    TerritoryGroup
 )
-SELECT 
+SELECT
     c.CustomerID,
     CASE 
         WHEN c.PersonID IS NOT NULL AND c.StoreID IS NULL THEN 'Individual'
@@ -110,14 +112,18 @@ SELECT
     COALESCE(a.City, 'No Informado') AS City,
     COALESCE(sp.Name, 'No Informado') AS StateProvinceName,
     COALESCE(cr.Name, 'No Informado') AS CountryRegionName,
-    COALESCE(c.TerritoryID, 0) AS TerritoryID
+    COALESCE(c.TerritoryID, 0) AS TerritoryID,
+    COALESCE(dt.TerritoryName, 'No Informado') AS TerritoryName,
+    COALESCE(dt.[Group], 'No Informado') AS TerritoryGroup
 FROM AdventureWorks2022.Sales.Customer c
+LEFT JOIN dbo.DimTerritory dt ON c.TerritoryID = dt.TerritoryID
 LEFT JOIN AdventureWorks2022.Person.Person p ON c.PersonID = p.BusinessEntityID
 LEFT JOIN AdventureWorks2022.Sales.Store s ON c.StoreID = s.BusinessEntityID
 OUTER APPLY (
     SELECT TOP 1 bea.AddressID
     FROM AdventureWorks2022.Person.BusinessEntityAddress bea
-    WHERE bea.BusinessEntityID = COALESCE(c.PersonID, c.StoreID)
+    -- Para tiendas se usa la direccion de la tienda (StoreID), no la de su contacto (PersonID)
+    WHERE bea.BusinessEntityID = COALESCE(c.StoreID, c.PersonID)
     ORDER BY bea.AddressTypeID
 ) addr_link
 LEFT JOIN AdventureWorks2022.Person.Address a ON addr_link.AddressID = a.AddressID

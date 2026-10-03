@@ -1,0 +1,148 @@
+// =============================================================================
+// medidas.dax - Medidas DAX de los 15 reportes (AdventureWorksDW)
+// =============================================================================
+// Uso: crear una tabla vacia "Medidas" (Inicio > Escribir datos) y agregar cada
+// medida con "Nueva medida" pegando la expresion. Los valores entre parentesis
+// son los resultados esperados, verificados contra el DW cargado.
+// =============================================================================
+
+
+// ============================ VENTAS (V1 - V5) ===============================
+Ventas Netas = SUM ( FactSales[LineTotal] )                         // 109.846.381
+Costo de Ventas = SUM ( FactSales[TotalProductCost] )               // 100.474.478
+Margen Bruto = SUM ( FactSales[GrossMargin] )                       // 9.371.904
+Margen Bruto % = DIVIDE ( [Margen Bruto], [Ventas Netas] )          // ~8,5 %
+Ordenes = DISTINCTCOUNT ( FactSales[SalesOrderID] )                 // 31.465
+Ticket Promedio = DIVIDE ( [Ventas Netas], [Ordenes] )              // 3.491
+Unidades Vendidas = SUM ( FactSales[OrderQty] )                     // 274.914
+Productos con Venta = DISTINCTCOUNT ( FactSales[ProductKey] )       // 266
+Precio Promedio de Venta = AVERAGE ( FactSales[UnitPrice] )
+
+// Comparacion interanual (requiere DimDate marcada como tabla de fechas)
+Ventas Año Anterior =
+    CALCULATE ( [Ventas Netas], SAMEPERIODLASTYEAR ( DimDate[FullDate] ) )
+Variacion YoY % =
+    DIVIDE ( [Ventas Netas] - [Ventas Año Anterior], [Ventas Año Anterior] )
+
+// V3 - Territorios
+Ventas Norteamerica =
+    CALCULATE ( [Ventas Netas], DimTerritory[Group] = "North America" )
+Participacion Norteamerica % =
+    DIVIDE ( [Ventas Norteamerica], CALCULATE ( [Ventas Netas], ALL ( DimTerritory ) ) )   // 72,2 %
+Participacion Internacional % =
+    DIVIDE (
+        CALCULATE ( [Ventas Netas], DimTerritory[Group] IN { "Europe", "Pacific" } ),
+        CALCULATE ( [Ventas Netas], ALL ( DimTerritory ) )
+    )                                                                                      // 27,8 %
+
+// V4 - Vendedores (SalesPersonKey = 0 es el canal online)
+Ventas Asistidas =
+    CALCULATE ( [Ventas Netas], DimSalesPerson[SalesPersonKey] <> 0 )
+Cuota Total = SUM ( DimSalesPerson[SalesQuota] )
+Cumplimiento de Cuota % = DIVIDE ( [Ventas Asistidas], [Cuota Total] )
+Comision Estimada =
+    SUMX ( FactSales, FactSales[LineTotal] * RELATED ( DimSalesPerson[CommissionPct] ) )
+Bonus Acumulado = SUM ( DimSalesPerson[Bonus] )
+Vendedores Activos =
+    CALCULATE ( DISTINCTCOUNT ( DimSalesPerson[SalesPersonKey] ), DimSalesPerson[SalesPersonKey] <> 0 )   // 17
+
+// V5 - Descuentos y ofertas
+Venta Bruta = SUMX ( FactSales, FactSales[OrderQty] * FactSales[UnitPrice] )   // 110.373.889
+Descuento Total = SUM ( FactSales[DiscountAmount] )                            // 527.508
+Tasa de Descuento % = DIVIDE ( [Descuento Total], [Venta Bruta] )              // 0,48 %
+Ventas con Promocion =
+    CALCULATE ( [Ventas Netas], DimSpecialOffer[Type] <> "No Discount" )
+Ventas Precio Regular =
+    CALCULATE ( [Ventas Netas], DimSpecialOffer[Type] = "No Discount" )
+
+
+// ============================ CLIENTES (C1 - C5) =============================
+Clientes Registrados = DISTINCTCOUNT ( DimCustomer[CustomerID] )               // 19.820
+Clientes Compradores = DISTINCTCOUNT ( FactSales[CustomerKey] )                // 19.119
+Clientes Individuales =
+    CALCULATE ( COUNTROWS ( DimCustomer ), DimCustomer[CustomerType] = "Individual" )   // 18.484
+Tiendas Asociadas =
+    CALCULATE ( COUNTROWS ( DimCustomer ), DimCustomer[CustomerType] = "Store" )        // 1.336
+Paises con Clientes = DISTINCTCOUNT ( DimCustomer[CountryRegionName] )         // 6
+Territorios Activos = DISTINCTCOUNT ( DimCustomer[TerritoryName] )             // 10
+Ventas por Cliente = DIVIDE ( [Ventas Netas], [Clientes Compradores] )         // 5.745
+Ordenes por Cliente = DIVIDE ( [Ordenes], [Clientes Compradores] )             // 1,65
+
+// C2 - Pareto (ventas acumuladas de clientes ordenados de mayor a menor)
+Ventas Acumuladas Clientes % =
+VAR VentaActual = [Ventas Netas]
+VAR Acumulado =
+    SUMX (
+        FILTER ( ALLSELECTED ( DimCustomer[CustomerKey] ), [Ventas Netas] >= VentaActual ),
+        [Ventas Netas]
+    )
+RETURN
+    DIVIDE ( Acumulado, CALCULATE ( [Ventas Netas], ALLSELECTED ( DimCustomer ) ) )
+
+// C3 - RFM (frecuencia y recencia)
+Clientes Frecuentes =
+    COUNTROWS ( FILTER ( VALUES ( DimCustomer[CustomerKey] ), [Ordenes] > 3 ) )
+Clientes Recurrentes =
+    COUNTROWS ( FILTER ( VALUES ( DimCustomer[CustomerKey] ), [Ordenes] >= 2 && [Ordenes] <= 3 ) )
+Clientes Compra Unica =
+    COUNTROWS ( FILTER ( VALUES ( DimCustomer[CustomerKey] ), [Ordenes] = 1 ) )
+Fecha de Referencia =
+VAR k = CALCULATE ( MAX ( FactSales[OrderDateKey] ), ALL ( FactSales ) )
+RETURN DATE ( INT ( k / 10000 ), MOD ( INT ( k / 100 ), 100 ), MOD ( k, 100 ) )   // 30-06-2014
+Ultima Compra = MAXX ( FactSales, RELATED ( DimDate[FullDate] ) )
+Recencia (dias) =
+    IF ( NOT ISBLANK ( [Ultima Compra] ), DATEDIFF ( [Ultima Compra], [Fecha de Referencia], DAY ) )
+Recencia Media (dias) =
+    AVERAGEX ( VALUES ( DimCustomer[CustomerKey] ), [Recencia (dias)] )
+
+// C5 - Canal de compra
+Ordenes Online =
+    CALCULATE ( [Ordenes], FactSales[OnlineOrderFlag] = TRUE () )              // 27.659
+Ordenes con Vendedor =
+    CALCULATE ( [Ordenes], FactSales[OnlineOrderFlag] = FALSE () )             // 3.806
+Ticket Online =
+    CALCULATE ( [Ticket Promedio], FactSales[OnlineOrderFlag] = TRUE () )      // ~1.061
+Ticket con Vendedor =
+    CALCULATE ( [Ticket Promedio], FactSales[OnlineOrderFlag] = FALSE () )     // ~21.148
+
+
+// =========================== PRODUCCION (P1 - P5) ============================
+// P1 / P2 - Ordenes de trabajo y scrap
+Ordenes de Trabajo = COUNTROWS ( FactWorkOrder )                               // 72.591
+Unidades Planificadas = SUM ( FactWorkOrder[OrderQty] )                        // 4.507.721
+Unidades Almacenadas = SUM ( FactWorkOrder[StockedQty] )                       // 4.497.070
+Unidades Desechadas = SUM ( FactWorkOrder[ScrappedQty] )                       // 10.651
+Tasa de Scrap % = DIVIDE ( [Unidades Desechadas], [Unidades Planificadas] )    // 0,24 %
+Costo de Scrap = SUM ( FactWorkOrder[ScrapCost] )                              // 359.947
+Ordenes con Descarte =
+    CALCULATE ( COUNTROWS ( FactWorkOrder ), FactWorkOrder[ScrappedQty] > 0 )  // 729
+Motivos de Descarte =
+    CALCULATE ( DISTINCTCOUNT ( DimScrapReason[ScrapReasonKey] ), DimScrapReason[ScrapReasonKey] <> 0 )   // 16
+
+// P3 - Inventario
+Unidades en Stock = SUM ( FactInventorySnapshot[Quantity] )                    // 335.974
+Valor del Inventario = SUM ( FactInventorySnapshot[InventoryValue] )
+Productos con Existencia = DISTINCTCOUNT ( FactInventorySnapshot[ProductKey] ) // 432
+Productos bajo Punto de Reorden =
+    COUNTROWS (
+        FILTER (
+            DimProduct,
+            NOT ISBLANK ( [Unidades en Stock] ) && [Unidades en Stock] < DimProduct[ReorderPoint]
+        )
+    )                                                                          // 7
+
+// P4 - Rendimiento por centro de trabajo
+Operaciones = COUNTROWS ( FactWorkOrderRouting )                               // 67.131
+Horas Reales = SUM ( FactWorkOrderRouting[ActualResourceHrs] )                 // 228.962,2
+Costo Real Operaciones = SUM ( FactWorkOrderRouting[ActualCost] )              // 3.487.969,5
+Costo Planificado Operaciones = SUM ( FactWorkOrderRouting[PlannedCost] )
+Variacion de Costo = SUM ( FactWorkOrderRouting[CostVariance] )                // 0 (real = planificado en la fuente)
+
+// P5 - Catalogo
+Productos en Catalogo = COUNTROWS ( DimProduct )                               // 504
+Productos Terminados =
+    CALCULATE ( COUNTROWS ( DimProduct ), DimProduct[FinishedGoodsFlag] = TRUE () )   // 295
+Productos Fabricados =
+    CALCULATE ( COUNTROWS ( DimProduct ), DimProduct[MakeFlag] = TRUE () )            // 239
+Margen Unitario de Lista =
+    AVERAGE ( DimProduct[ListPrice] ) - AVERAGE ( DimProduct[StandardCost] )

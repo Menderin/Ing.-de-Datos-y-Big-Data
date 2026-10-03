@@ -14,7 +14,7 @@ AdventureWorks / SQL Server
         Power BI
 ```
 
-El trabajo actual corresponde a la **Entrega 1** e incluye el diseño de la arquitectura, el diseño conceptual de los reportes y la implementación de la base transaccional como fuente de datos.
+El trabajo incluye la **Entrega 1** (arquitectura, diseño conceptual de reportes y base transaccional) y la **Entrega 2** (ETL operativo, Data Warehouse `AdventureWorksDW` y diseño final de reportes). El repositorio queda además preparado para conectar **Power BI Desktop** (ver [`powerbi/README.md`](powerbi/README.md)).
 
 ## Requisitos
 
@@ -34,6 +34,7 @@ El trabajo actual corresponde a la **Entrega 1** e incluye el diseño de la arqu
 │   ├── dw/               Scripts DDL, carga y auditoría del Data Warehouse
 │   └── etl/              Orquestador en Python (run_etl.py)
 ├── evidencia/            Capturas utilizadas en el informe
+├── powerbi/              Guía de conexión, consultas M, relaciones y medidas DAX
 ├── reports/              Diseño técnico final de los 15 reportes
 ├── Taller1/              Entregables y mockups interactivos (Entrega 1)
 ├── Taller2/              Documentación de modelo dimensional y ETL (Entrega 2)
@@ -108,7 +109,7 @@ Set-ExecutionPolicy -Scope Process Bypass
 python3 database/etl/run_etl.py
 ```
 
-El pipeline se ejecuta en ~5 segundos y deja operativa la base analítica **`AdventureWorksDW`** con 121.317 registros en `FactSales`, 72.591 en `FactWorkOrder`, 67.131 en `FactWorkOrderRouting`, 1.069 en `FactInventorySnapshot` y cero registros huérfanos.
+El pipeline se ejecuta en ~5-7 segundos y deja operativa la base analítica **`AdventureWorksDW`** con 121.317 registros en `FactSales`, 72.591 en `FactWorkOrder`, 67.131 en `FactWorkOrderRouting`, 1.069 en `FactInventorySnapshot` y cero registros huérfanos.
 
 ### 6. Conectarse desde SSMS
 
@@ -124,6 +125,10 @@ Certificado de servidor de confianza: activado
 ```
 
 Después de conectarse, ambas bases de datos (`AdventureWorks2022` y `AdventureWorksDW`) estarán disponibles y operativas.
+
+## Power BI
+
+Consultar [powerbi/README.md](powerbi/README.md): conexión a `localhost,1433`, consultas de Power Query, relaciones del modelo estrella y medidas DAX de los 15 reportes.
 
 ## Diseño de Reportes y Mockups
 

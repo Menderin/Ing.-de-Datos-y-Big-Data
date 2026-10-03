@@ -22,7 +22,7 @@ Habiendo validado los mockups conceptuales e interactivos en la Entrega 1 (`Tall
 
 | Cód | Perspectiva | Reporte | Tabla de Hechos | Dimensiones Clave | Nivel de Granularidad |
 |:---|:---|:---|:---|:---|:---|
-| **C1** | Clientes | Panorama General de Cartera | `FactSales` | `DimCustomer`, `DimTerritory`, `DimDate` | Cliente / Tipo de Cliente |
+| **C1** | Clientes | Panorama General de Cartera | `FactSales` | `DimCustomer`, `DimDate` | Cliente / Tipo de Cliente |
 | **C2** | Clientes | Valor y Ranking de Clientes (Pareto) | `FactSales` | `DimCustomer`, `DimDate` | Cliente individual o tienda |
 | **C3** | Clientes | Frecuencia y Recencia (RFM) | `FactSales` | `DimCustomer`, `DimDate` | Cliente consolidado |
 | **C4** | Clientes | Distribución Geográfica de Clientes | `FactSales` | `DimCustomer`, `DimTerritory` | País / Estado / Ciudad |
@@ -52,10 +52,10 @@ Habiendo validado los mockups conceptuales e interactivos en la Entrega 1 (`Tall
   - *Clientes Individuales:* `CALCULATE(COUNTROWS(DimCustomer), DimCustomer[CustomerType] = "Individual")` (18.484; 93,3%)
   - *Tiendas Asociadas:* `CALCULATE(COUNTROWS(DimCustomer), DimCustomer[CustomerType] = "Store")` (1.336; 6,7%)
 - **Visualizaciones Principales:**
-  - Gráfico de barras apiladas: Composición de clientes compradores vs no compradores por territorio.
+  - Gráfico de barras apiladas: Composición de clientes compradores vs no compradores por territorio (`DimCustomer[TerritoryName]`).
   - Gráfico de donas: Proporción de clientes Individuales vs Tiendas.
   - Tabla de detalle: Lista de clientes con territorio, tipo y fecha de primera compra.
-- **Jerarquía Drill Down:** `DimTerritory[Group]` → `DimTerritory[CountryRegionCode]` → `DimCustomer[StateProvinceName]` → `DimCustomer[CustomerName]`.
+- **Jerarquía Drill Down:** `DimCustomer[TerritoryGroup]` → `DimCustomer[CountryRegionName]` → `DimCustomer[StateProvinceName]` → `DimCustomer[CustomerName]` (todas en `DimCustomer`: Power BI solo permite jerarquías dentro de una misma tabla).
 
 #### Reporte C2: Valor y Ranking de Clientes (Análisis de Pareto)
 - **Objetivo de Negocio:** Identificar el 20% de clientes que generan el 80% de los ingresos de la compañía para estrategias de fidelización y cuentas clave.
@@ -83,7 +83,7 @@ Habiendo validado los mockups conceptuales e interactivos en la Entrega 1 (`Tall
 #### Reporte C4: Distribución Geográfica de Clientes
 - **Objetivo de Negocio:** Analizar la cobertura espacial y la penetración de mercado global de *Adventure Works*.
 - **Tarjetas KPI:**
-  - *Territorios Activos:* `DISTINCTCOUNT(DimTerritory[TerritoryKey])` (10)
+  - *Territorios Activos:* `DISTINCTCOUNT(DimCustomer[TerritoryName])` (10)
   - *Países con Clientes:* `DISTINCTCOUNT(DimCustomer[CountryRegionName])` (6)
   - *Región Líder:* Región con mayor concentración de clientes (Southwest: 4.696 clientes).
   - *Venta Promedio por Territorio:* `AVERAGEX(VALUES(DimTerritory[TerritoryName]), [Total Ventas])`.
@@ -96,11 +96,11 @@ Habiendo validado los mockups conceptuales e interactivos en la Entrega 1 (`Tall
 - **Tarjetas KPI:**
   - *Órdenes Online:* `CALCULATE(DISTINCTCOUNT(FactSales[SalesOrderID]), FactSales[OnlineOrderFlag] = 1)` (27.659; 87,9%)
   - *Órdenes con Vendedor:* `CALCULATE(DISTINCTCOUNT(FactSales[SalesOrderID]), FactSales[OnlineOrderFlag] = 0)` (3.806; 12,1%)
-  - *Ticket Promedio Online:* `$1.080` (ventas minoristas)
-  - *Ticket Promedio Vendedor:* `$24.530` (pedidos mayoristas de tiendas)
+  - *Ticket Promedio Online:* `$1.061` (ventas minoristas)
+  - *Ticket Promedio Vendedor:* `$21.148` (pedidos mayoristas de tiendas)
 - **Visualizaciones Principales:**
   - Gráfico de columnas agrupadas mensual: Facturación canal Online vs Facturación canal Vendedor.
-  - Gráfico de cascada: Margen bruto porcentual aportado por cada canal.
+  - Gráfico de cascada: Margen bruto aportado por cada canal (`GrossMargin`).
 
 ---
 
@@ -115,13 +115,13 @@ Habiendo validado los mockups conceptuales e interactivos en la Entrega 1 (`Tall
   - *Unidades Desechadas:* `SUM(FactWorkOrder[ScrappedQty])` (10.651; 0,24%)
 - **Visualizaciones Principales:**
   - Gráfico de líneas mensual: Evolución temporal de unidades ordenadas vs producidas.
-  - Gráfico de barras por categoría de producto fabricado (Bicicletas, Componentes, Cuadros).
+  - Gráfico de barras por categoría de producto fabricado (solo se fabrican `Bikes` 12.518 órdenes, `Components` 37.023 y `Sin Categoría` 23.050; esta última agrupa piezas intermedias sin subcategoría).
 - **Jerarquía Drill Down:** `DimDate[Year]` → `DimDate[Quarter]` → `DimDate[MonthName]`.
 
 #### Reporte P2: Calidad y Desperdicio (*Scrap Analysis*)
 - **Objetivo de Negocio:** Diagnosticar las causas raíz de mermas y productos defectuosos para reducir costos de no calidad.
 - **Tarjetas KPI:**
-  - *Costo Total de Desperdicio:* `SUM(FactWorkOrder[ScrapCost])` ($184.250 est.)
+  - *Costo Total de Desperdicio:* `SUM(FactWorkOrder[ScrapCost])` ($359.947)
   - *Tasa Global de Scrap:* `SUM(FactWorkOrder[ScrappedQty]) / SUM(FactWorkOrder[OrderQty])` (0,24%)
   - *Órdenes con Descarte:* `CALCULATE(COUNTROWS(FactWorkOrder), FactWorkOrder[ScrappedQty] > 0)` (729)
   - *Motivos de Descarte:* `DISTINCTCOUNT(DimScrapReason[ScrapReasonKey])` (16 motivos registrados)
@@ -147,7 +147,7 @@ Habiendo validado los mockups conceptuales e interactivos en la Entrega 1 (`Tall
   - *Operaciones Totales:* `COUNTROWS(FactWorkOrderRouting)` (67.131)
   - *Horas Reales de Recurso:* `SUM(FactWorkOrderRouting[ActualResourceHrs])` (228.962,20 hrs)
   - *Costo Real de Mano de Obra/Máquina:* `SUM(FactWorkOrderRouting[ActualCost])` ($3.487.969,50)
-  - *Variación de Costo:* `SUM(FactWorkOrderRouting[CostVariance])` ($0,00 - cumplimiento presupuestario)
+  - *Variación de Costo:* `SUM(FactWorkOrderRouting[CostVariance])` ($0,00; en AdventureWorks el costo real de cada operación coincide con el planificado, por lo que la variación es nula en toda la fuente)
 - **Visualizaciones Principales:**
   - Gráfico de columnas: Horas reales consumidas por centro de trabajo (`Subassembly`, `Frame Forming`, `Paint`, etc.).
   - Tabla de rendimiento: Secuencia de operaciones y tasas horarias (`DimLocation[CostRate]`).
@@ -157,7 +157,7 @@ Habiendo validado los mockups conceptuales e interactivos en la Entrega 1 (`Tall
 - **Tarjetas KPI:**
   - *Artículos en Catálogo:* `COUNTROWS(DimProduct)` (504)
   - *Productos Terminados para Venta:* `CALCULATE(COUNTROWS(DimProduct), DimProduct[FinishedGoodsFlag] = 1)` (295)
-  - *Productos Fabricados Internamente:* `CALCULATE(COUNTROWS(DimProduct), DimProduct[MakeFlag] = 1)` (238)
+  - *Productos Fabricados Internamente:* `CALCULATE(COUNTROWS(DimProduct), DimProduct[MakeFlag] = 1)` (239)
   - *Categorías de Producto:* 4 (`Bikes`, `Components`, `Clothing`, `Accessories`)
 - **Visualizaciones Principales:**
   - Matriz de dispersión: Margen unitario (`ListPrice - StandardCost`) vs Precio de lista.
@@ -173,7 +173,7 @@ Habiendo validado los mockups conceptuales e interactivos en la Entrega 1 (`Tall
   - *Ventas Netas Totales:* `SUM(FactSales[LineTotal])` ($109,85M)
   - *Costo Total de Mercaderías (COGS):* `SUM(FactSales[TotalProductCost])`
   - *Margen Bruto:* `SUM(FactSales[GrossMargin])`
-  - *Margen Bruto Porcentual:* `[Margen Bruto] / [Ventas Netas]` (~42%)
+  - *Margen Bruto Porcentual:* `[Margen Bruto] / [Ventas Netas]` (~8,5%; margen bruto $9,37M sobre COGS $100,47M, calculado con `StandardCost` vigente del producto)
   - *Órdenes Totales:* `DISTINCTCOUNT(FactSales[SalesOrderID])` (31.465)
   - *Ticket Promedio:* `[Ventas Netas] / [Órdenes Totales]` ($3.491)
 - **Visualizaciones Principales:**
@@ -186,7 +186,7 @@ Habiendo validado los mockups conceptuales e interactivos en la Entrega 1 (`Tall
 - **Tarjetas KPI:**
   - *Unidades Vendidas:* `SUM(FactSales[OrderQty])` (274.914)
   - *Productos con Venta Activa:* `DISTINCTCOUNT(FactSales[ProductKey])` (266)
-  - *Categoría Líder en Facturación:* `Bikes` (> 85% de la facturación)
+  - *Categoría Líder en Facturación:* `Bikes` (86,2% de la facturación)
   - *Precio Promedio de Venta:* `AVERAGE(FactSales[UnitPrice])`
 - **Visualizaciones Principales:**
   - Gráfico de barras jerárquico: Ventas y Margen por Categoría y Subcategoría.
@@ -197,9 +197,9 @@ Habiendo validado los mockups conceptuales e interactivos en la Entrega 1 (`Tall
 - **Objetivo de Negocio:** Comparar el volumen de negocio y ticket medio entre mercados nacionales e internacionales.
 - **Tarjetas KPI:**
   - *Territorios Comerciales:* 10
-  - *Venta Nacional (Norteamérica):* Participación porcentual de US y Canadá (~55%).
-  - *Venta Internacional:* Participación de Europa y Pacífico (~45%).
-  - *Territorio con Mayor Venta:* Southwest / Northwest.
+  - *Venta Nacional (Norteamérica):* Participación porcentual de US y Canadá (72,2%).
+  - *Venta Internacional:* Participación de Europa y Pacífico (27,8%).
+  - *Territorio con Mayor Venta:* Southwest ($24,18M), seguido de Canada ($16,36M) y Northwest ($16,08M).
 - **Visualizaciones Principales:**
   - Gráfico de columnas apiladas al 100%: Participación mensual de cada grupo territorial (`North America`, `Europe`, `Pacific`).
   - Mapa de calor con métricas de ventas y cantidad de clientes compradores.
@@ -210,7 +210,7 @@ Habiendo validado los mockups conceptuales e interactivos en la Entrega 1 (`Tall
 - **Tarjetas KPI:**
   - *Ejecutivos Comerciales:* 17 vendedores registrados
   - *Ventas Asistidas:* Facturación generada por vendedores presenciales
-  - *Cumplimiento Global de Cuota:* `SUM(FactSales[LineTotal]) / SUM(DimSalesPerson[SalesQuota])`
+  - *Cumplimiento Global de Cuota:* `SUM(FactSales[LineTotal]) / SUM(DimSalesPerson[SalesQuota])` (la cuota es un valor único por vendedor y las ventas abarcan 2011-2014, por lo que el cumplimiento resulta muy superior a 100%; se recomienda filtrar por año o interpretarlo como índice relativo entre vendedores)
   - *Comisión Total Estimada:* `SUMX(FactSales, FactSales[LineTotal] * RELATED(DimSalesPerson[CommissionPct]))`
 - **Visualizaciones Principales:**
   - Gráfico de barras comparativo: Ventas reales vs Cuota asignada por vendedor.
@@ -220,18 +220,18 @@ Habiendo validado los mockups conceptuales e interactivos en la Entrega 1 (`Tall
 - **Objetivo de Negocio:** Evaluar el impacto de las campañas promocionales y descuentos por volumen en el margen financiero.
 - **Tarjetas KPI:**
   - *Venta Bruta (sin descuento):* `SUMX(FactSales, FactSales[OrderQty] * FactSales[UnitPrice])`
-  - *Descuento Total Otorgado:* `SUM(FactSales[DiscountAmount])` ($3,18M)
+  - *Descuento Total Otorgado:* `SUM(FactSales[DiscountAmount])` ($527.508)
   - *Venta Neta Efectiva:* `SUM(FactSales[LineTotal])`
-  - *Tasa Promedio de Descuento:* `[Descuento Total] / [Venta Bruta]` (2,52%)
+  - *Tasa Promedio de Descuento:* `[Descuento Total] / [Venta Bruta]` (0,48%; sobre venta bruta de $110,37M)
 - **Visualizaciones Principales:**
-  - Gráfico de cascada (Waterfall): De Venta Bruta a Venta Neta discriminando por tipo de oferta especial.
+  - Gráfico de cascada (Waterfall): De Venta Bruta a Venta Neta discriminando por tipo de oferta especial (`DimSpecialOffer[Type]`).
   - Gráfico de torta/anillo: Porcentaje de ventas con precio regular vs ventas bajo promoción.
 
 ---
 
 ## 4. Requisitos para la Implementación en Power BI (Entrega 3)
 
-1. **Modo de Almacenamiento:** Conexión mediante modo **Importación** (VertiPaq) apuntando a la base `AdventureWorksDW` en `localhost,1433`.
+1. **Modo de Almacenamiento:** Conexión mediante modo **Importación** (VertiPaq) apuntando a la base `AdventureWorksDW` en `localhost,1433`. La guía paso a paso, las consultas de Power Query, las relaciones y las medidas DAX listas para pegar están en la carpeta [`powerbi/`](../powerbi/README.md).
 2. **Modelo de Relaciones:** Esquema en estrella puro con dirección de filtro unidireccional (1 a varios desde las dimensiones hacia las tablas de hechos).
 3. **Optimización de Medidas:** Todas las métricas dinámicas deben ser implementadas mediante medidas DAX explícitas (no columnas calculadas), asegurando máximo rendimiento en memoria.
 4. **Bonificación de Drill Down:** Se implementaron las jerarquías requeridas en Tiempo, Geografía, Producto y Centro de Costo para habilitar la navegación interactiva solicitada en la pauta oficial.

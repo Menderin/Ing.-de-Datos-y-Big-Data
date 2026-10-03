@@ -62,7 +62,8 @@ Para dar soporte a los 15 reportes analíticos de la plataforma de reportabilida
 - **Clave Subrogada:** `CustomerKey` (IDENTITY).
 - **Clave Natural:** `CustomerID`.
 - **Volumetría:** 19.820 registros.
-- **Atributos:** `CustomerType` ('Individual' o 'Store'), `CustomerName`, `StoreName`, `City`, `StateProvinceName`, `CountryRegionName`, `TerritoryID`.
+- **Atributos:** `CustomerType` ('Individual' o 'Store'), `CustomerName`, `StoreName`, `City`, `StateProvinceName`, `CountryRegionName`, `TerritoryID`, `TerritoryName`, `TerritoryGroup` (territorio desnormalizado para evitar relaciones ambiguas en Power BI).
+- **Dirección:** para tiendas se usa la dirección de la tienda (`StoreID`); para personas, la de la persona (`PersonID`).
 
 ### 2.3 `DimProduct` (Catálogo y Manufactura)
 - **Clave Subrogada:** `ProductKey` (IDENTITY).
