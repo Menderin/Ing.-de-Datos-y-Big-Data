@@ -1,23 +1,4 @@
--- ==============================================================================
--- 01_create_dw_schema.sql
--- Creación de la Base de Datos y Esquema Dimensional (Data Warehouse)
--- Proyecto: Ingeniería de Datos y Big Data - Entrega 2
--- ==============================================================================
-
-USE [master];
-GO
-
-SET NOCOUNT ON;
-
--- 1. Crear base de datos AdventureWorksDW si no existe
-IF DB_ID(N'AdventureWorksDW') IS NULL
-BEGIN
-    PRINT 'Creando base de datos analitica AdventureWorksDW...';
-    CREATE DATABASE [AdventureWorksDW];
-END
-GO
-
-USE [AdventureWorksDW];
+USE [$(TargetDatabase)];
 GO
 
 -- 2. Eliminar tablas de hechos si existen (por orden de dependencias referenciales)
@@ -47,13 +28,13 @@ CREATE TABLE dbo.DimDate (
     FullDate DATE NOT NULL,
     [Year] INT NOT NULL,
     [Quarter] INT NOT NULL,
-    QuarterName VARCHAR(10) NOT NULL,            -- 'Q1', 'Q2', etc.
+    QuarterName NVARCHAR(10) NOT NULL,            -- 'Q1', 'Q2', etc.
     [Month] INT NOT NULL,
-    MonthName VARCHAR(20) NOT NULL,              -- 'Enero', 'Febrero', etc.
-    MonthYear VARCHAR(20) NOT NULL,              -- '2013-05'
+    MonthName NVARCHAR(20) NOT NULL,              -- 'Enero', 'Febrero', etc.
+    MonthYear NVARCHAR(20) NOT NULL,              -- '2013-05'
     [DayOfMonth] INT NOT NULL,
     DayOfWeekNumber INT NOT NULL,                -- 1 (Domingo) a 7 (Sábado)
-    DayOfWeekName VARCHAR(20) NOT NULL,          -- 'Lunes', 'Martes', etc.
+    DayOfWeekName NVARCHAR(20) NOT NULL,          -- 'Lunes', 'Martes', etc.
     IsWeekend BIT NOT NULL
 );
 
@@ -63,15 +44,15 @@ CREATE TABLE dbo.DimDate (
 CREATE TABLE dbo.DimCustomer (
     CustomerKey INT IDENTITY(1,1) NOT NULL PRIMARY KEY,
     CustomerID INT NOT NULL,                     -- Clave de negocio OLTP
-    CustomerType VARCHAR(20) NOT NULL,           -- 'Individual' o 'Store'
-    CustomerName VARCHAR(150) NOT NULL,          -- Nombre de persona o razón social
-    StoreName VARCHAR(150) NULL,
-    City VARCHAR(50) NOT NULL,
-    StateProvinceName VARCHAR(50) NOT NULL,
-    CountryRegionName VARCHAR(50) NOT NULL,
+    CustomerType NVARCHAR(20) NOT NULL,           -- 'Individual' o 'Store'
+    CustomerName NVARCHAR(200) NOT NULL,          -- Admite nombres compuestos de hasta 152 caracteres
+    StoreName NVARCHAR(150) NULL,
+    City NVARCHAR(50) NOT NULL,
+    StateProvinceName NVARCHAR(50) NOT NULL,
+    CountryRegionName NVARCHAR(50) NOT NULL,
     TerritoryID INT NOT NULL,
-    TerritoryName VARCHAR(50) NOT NULL,          -- Territorio del cliente (desnormalizado para Power BI)
-    TerritoryGroup VARCHAR(50) NOT NULL          -- North America / Europe / Pacific
+    TerritoryName NVARCHAR(50) NOT NULL,          -- Territorio del cliente (desnormalizado para Power BI)
+    TerritoryGroup NVARCHAR(50) NOT NULL          -- North America / Europe / Pacific
 );
 CREATE UNIQUE NONCLUSTERED INDEX IX_DimCustomer_CustomerID ON dbo.DimCustomer(CustomerID);
 
@@ -81,17 +62,17 @@ CREATE UNIQUE NONCLUSTERED INDEX IX_DimCustomer_CustomerID ON dbo.DimCustomer(Cu
 CREATE TABLE dbo.DimProduct (
     ProductKey INT IDENTITY(1,1) NOT NULL PRIMARY KEY,
     ProductID INT NOT NULL,                      -- Clave de negocio OLTP
-    ProductName VARCHAR(100) NOT NULL,
-    ProductNumber VARCHAR(30) NOT NULL,
+    ProductName NVARCHAR(100) NOT NULL,
+    ProductNumber NVARCHAR(30) NOT NULL,
     MakeFlag BIT NOT NULL,
     FinishedGoodsFlag BIT NOT NULL,
-    Color VARCHAR(20) NOT NULL,
+    Color NVARCHAR(20) NOT NULL,
     SafetyStockLevel SMALLINT NOT NULL,
     ReorderPoint SMALLINT NOT NULL,
     StandardCost MONEY NOT NULL,
     ListPrice MONEY NOT NULL,
-    SubcategoryName VARCHAR(50) NOT NULL,
-    CategoryName VARCHAR(50) NOT NULL
+    SubcategoryName NVARCHAR(50) NOT NULL,
+    CategoryName NVARCHAR(50) NOT NULL
 );
 CREATE UNIQUE NONCLUSTERED INDEX IX_DimProduct_ProductID ON dbo.DimProduct(ProductID);
 
@@ -101,9 +82,9 @@ CREATE UNIQUE NONCLUSTERED INDEX IX_DimProduct_ProductID ON dbo.DimProduct(Produ
 CREATE TABLE dbo.DimTerritory (
     TerritoryKey INT IDENTITY(1,1) NOT NULL PRIMARY KEY,
     TerritoryID INT NOT NULL,                    -- Clave de negocio OLTP
-    TerritoryName VARCHAR(50) NOT NULL,
-    CountryRegionCode VARCHAR(5) NOT NULL,
-    [Group] VARCHAR(50) NOT NULL
+    TerritoryName NVARCHAR(50) NOT NULL,
+    CountryRegionCode NVARCHAR(5) NOT NULL,
+    [Group] NVARCHAR(50) NOT NULL
 );
 CREATE UNIQUE NONCLUSTERED INDEX IX_DimTerritory_TerritoryID ON dbo.DimTerritory(TerritoryID);
 
@@ -113,8 +94,8 @@ CREATE UNIQUE NONCLUSTERED INDEX IX_DimTerritory_TerritoryID ON dbo.DimTerritory
 CREATE TABLE dbo.DimSalesPerson (
     SalesPersonKey INT NOT NULL PRIMARY KEY,     -- Usamos BusinessEntityID directo (0 = Venta Online / Directa)
     BusinessEntityID INT NOT NULL,
-    FullName VARCHAR(150) NOT NULL,
-    JobTitle VARCHAR(50) NOT NULL,
+    FullName NVARCHAR(150) NOT NULL,
+    JobTitle NVARCHAR(50) NOT NULL,
     SalesQuota MONEY NULL,
     Bonus MONEY NOT NULL,
     CommissionPct DECIMAL(5,4) NOT NULL,
@@ -127,10 +108,10 @@ CREATE TABLE dbo.DimSalesPerson (
 CREATE TABLE dbo.DimSpecialOffer (
     SpecialOfferKey INT IDENTITY(1,1) NOT NULL PRIMARY KEY,
     SpecialOfferID INT NOT NULL,                 -- Clave de negocio OLTP
-    Description VARCHAR(255) NOT NULL,
+    Description NVARCHAR(255) NOT NULL,
     DiscountPct DECIMAL(5,4) NOT NULL,
-    [Type] VARCHAR(50) NOT NULL,
-    Category VARCHAR(50) NOT NULL
+    [Type] NVARCHAR(50) NOT NULL,
+    Category NVARCHAR(50) NOT NULL
 );
 CREATE UNIQUE NONCLUSTERED INDEX IX_DimSpecialOffer_SpecialOfferID ON dbo.DimSpecialOffer(SpecialOfferID);
 
@@ -140,7 +121,7 @@ CREATE UNIQUE NONCLUSTERED INDEX IX_DimSpecialOffer_SpecialOfferID ON dbo.DimSpe
 CREATE TABLE dbo.DimLocation (
     LocationKey INT IDENTITY(1,1) NOT NULL PRIMARY KEY,
     LocationID SMALLINT NOT NULL,                -- Clave de negocio OLTP
-    LocationName VARCHAR(50) NOT NULL,
+    LocationName NVARCHAR(50) NOT NULL,
     CostRate SMALLMONEY NOT NULL,
     Availability DECIMAL(8,2) NOT NULL
 );
@@ -152,7 +133,7 @@ CREATE UNIQUE NONCLUSTERED INDEX IX_DimLocation_LocationID ON dbo.DimLocation(Lo
 CREATE TABLE dbo.DimScrapReason (
     ScrapReasonKey INT NOT NULL PRIMARY KEY,     -- Clave de negocio OLTP (0 = Sin Descarte)
     ScrapReasonID SMALLINT NOT NULL,
-    ScrapReasonName VARCHAR(50) NOT NULL
+    ScrapReasonName NVARCHAR(50) NOT NULL
 );
 
 PRINT 'Creando tablas de hechos...';
@@ -260,7 +241,7 @@ CREATE TABLE dbo.FactInventorySnapshot (
     FactInventoryKey INT IDENTITY(1,1) NOT NULL PRIMARY KEY,
     ProductKey INT NOT NULL,
     LocationKey INT NOT NULL,
-    Shelf VARCHAR(10) NOT NULL,
+    Shelf NVARCHAR(10) NOT NULL,
     Bin TINYINT NOT NULL,
     Quantity SMALLINT NOT NULL,
     InventoryValue MONEY NOT NULL,               -- Quantity * Product.StandardCost
@@ -273,4 +254,18 @@ CREATE NONCLUSTERED INDEX IX_FactInventory_LocationKey ON dbo.FactInventorySnaps
 GO
 
 PRINT 'Esquema de AdventureWorksDW creado exitosamente.';
+GO
+
+-- Defensa adicional: unicidad de los eventos y rangos basicos del DW.
+CREATE UNIQUE INDEX UX_FactSales_Source ON dbo.FactSales(SalesOrderID,SalesOrderDetailID);
+CREATE UNIQUE INDEX UX_FactWorkOrder_Source ON dbo.FactWorkOrder(WorkOrderID);
+CREATE UNIQUE INDEX UX_FactRouting_Source ON dbo.FactWorkOrderRouting(WorkOrderID,ProductKey,OperationSequence);
+CREATE UNIQUE INDEX UX_FactInventory_Source ON dbo.FactInventorySnapshot(ProductKey,LocationKey);
+ALTER TABLE dbo.FactSales ADD CONSTRAINT CK_FactSales_Ranges CHECK
+ (OrderQty>0 AND UnitPrice>=0 AND UnitPriceDiscount BETWEEN 0 AND 1 AND LineTotal>=0);
+ALTER TABLE dbo.FactWorkOrder ADD CONSTRAINT CK_FactWorkOrder_Quantities CHECK
+ (OrderQty>0 AND StockedQty>=0 AND ScrappedQty>=0 AND CAST(StockedQty AS bigint)+ScrappedQty=OrderQty);
+ALTER TABLE dbo.FactWorkOrderRouting ADD CONSTRAINT CK_FactRouting_Ranges CHECK
+ (ActualResourceHrs>=0 AND PlannedCost>=0 AND ActualCost>=0);
+ALTER TABLE dbo.FactInventorySnapshot ADD CONSTRAINT CK_FactInventory_Stock CHECK (Quantity>=0);
 GO

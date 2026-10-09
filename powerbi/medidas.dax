@@ -1,9 +1,13 @@
 // =============================================================================
 // medidas.dax - Medidas DAX de los 15 reportes (AdventureWorksDW)
+// Referencia manual histórica. La implementación vigente está en
+// piloto/PilotoVentas.SemanticModel/model.bim y las fichas *-finales.md.
+// No pegar todo este archivo encima del PBIP: nombres y selección pueden diferir.
 // =============================================================================
 // Uso: crear una tabla vacia "Medidas" (Inicio > Escribir datos) y agregar cada
 // medida con "Nueva medida" pegando la expresion. Los valores entre parentesis
-// son los resultados esperados, verificados contra el DW cargado.
+// son referencias SQL del DW actual, no pruebas de ejecucion DAX en Desktop.
+// Consulte piloto/README.md para validar medidas y filtros en Power BI.
 // =============================================================================
 
 
@@ -12,11 +16,12 @@ Ventas Netas = SUM ( FactSales[LineTotal] )                         // 109.846.3
 Costo de Ventas = SUM ( FactSales[TotalProductCost] )               // 100.474.478
 Margen Bruto = SUM ( FactSales[GrossMargin] )                       // 9.371.904
 Margen Bruto % = DIVIDE ( [Margen Bruto], [Ventas Netas] )          // ~8,5 %
-Ordenes = DISTINCTCOUNT ( FactSales[SalesOrderID] )                 // 31.465
+Ordenes = COALESCE ( DISTINCTCOUNT ( FactSales[SalesOrderID] ), 0 )  // 31.465; cero sin filas
 Ticket Promedio = DIVIDE ( [Ventas Netas], [Ordenes] )              // 3.491
 Unidades Vendidas = SUM ( FactSales[OrderQty] )                     // 274.914
 Productos con Venta = DISTINCTCOUNT ( FactSales[ProductKey] )       // 266
 Precio Promedio de Venta = AVERAGE ( FactSales[UnitPrice] )
+Precio Neto por Unidad = DIVIDE ( [Ventas Netas], [Unidades Vendidas] )
 
 // Comparacion interanual (requiere DimDate marcada como tabla de fechas)
 Ventas Año Anterior =
@@ -35,21 +40,26 @@ Participacion Internacional % =
         CALCULATE ( [Ventas Netas], ALL ( DimTerritory ) )
     )                                                                                      // 27,8 %
 
-// V4 - Vendedores (SalesPersonKey = 0 es el canal online)
+// V4 - Vendedores identificados; clave 0 significa sin vendedor, no siempre online.
 Ventas Asistidas =
-    CALCULATE ( [Ventas Netas], DimSalesPerson[SalesPersonKey] <> 0 )
-Cuota Total = SUM ( DimSalesPerson[SalesQuota] )
-Cumplimiento de Cuota % = DIVIDE ( [Ventas Asistidas], [Cuota Total] )
-Comision Estimada =
-    SUMX ( FactSales, FactSales[LineTotal] * RELATED ( DimSalesPerson[CommissionPct] ) )
-Bonus Acumulado = SUM ( DimSalesPerson[Bonus] )
-Vendedores Activos =
+    CALCULATE ( [Ventas Netas], KEEPFILTERS ( DimSalesPerson[SalesPersonKey] <> 0 ) )
+Ordenes con Vendedor =
+    CALCULATE ( DISTINCTCOUNT ( FactSales[SalesOrderID] ), KEEPFILTERS ( DimSalesPerson[SalesPersonKey] <> 0 ) )
+Ticket con Vendedor = DIVIDE ( [Ventas Asistidas], [Ordenes con Vendedor] )
+Vendedores con Ventas =
+    CALCULATE ( DISTINCTCOUNT ( FactSales[SalesPersonKey] ), KEEPFILTERS ( DimSalesPerson[SalesPersonKey] <> 0 ) )
+Vendedores Registrados =
     CALCULATE ( DISTINCTCOUNT ( DimSalesPerson[SalesPersonKey] ), DimSalesPerson[SalesPersonKey] <> 0 )   // 17
 
 // V5 - Descuentos y ofertas
+// Oferta registrada y descuento aplicado son conceptos distintos.
 Venta Bruta = SUMX ( FactSales, FactSales[OrderQty] * FactSales[UnitPrice] )   // 110.373.889
 Descuento Total = SUM ( FactSales[DiscountAmount] )                            // 527.508
 Tasa de Descuento % = DIVIDE ( [Descuento Total], [Venta Bruta] )              // 0,48 %
+Venta con Descuento Aplicado =
+    CALCULATE ( [Ventas Netas], KEEPFILTERS ( FactSales[UnitPriceDiscount] > 0 ) )
+Venta sin Descuento Aplicado =
+    CALCULATE ( [Ventas Netas], KEEPFILTERS ( FactSales[UnitPriceDiscount] = 0 ) )
 Ventas con Promocion =
     CALCULATE ( [Ventas Netas], DimSpecialOffer[Type] <> "No Discount" )
 Ventas Precio Regular =
@@ -71,13 +81,15 @@ Ordenes por Cliente = DIVIDE ( [Ordenes], [Clientes Compradores] )             /
 // C2 - Pareto (ventas acumuladas de clientes ordenados de mayor a menor)
 Ventas Acumuladas Clientes % =
 VAR VentaActual = [Ventas Netas]
+VAR CarteraSeleccionada =
+    ADDCOLUMNS ( ALLSELECTED ( DimCustomer ), "@Venta", [Ventas Netas] )
 VAR Acumulado =
     SUMX (
-        FILTER ( ALLSELECTED ( DimCustomer[CustomerKey] ), [Ventas Netas] >= VentaActual ),
-        [Ventas Netas]
+        FILTER ( CarteraSeleccionada, NOT ISBLANK ( [@Venta] ) && [@Venta] >= VentaActual ),
+        [@Venta]
     )
 RETURN
-    DIVIDE ( Acumulado, CALCULATE ( [Ventas Netas], ALLSELECTED ( DimCustomer ) ) )
+    IF ( NOT ISBLANK ( VentaActual ), DIVIDE ( Acumulado, SUMX ( CarteraSeleccionada, [@Venta] ) ) )
 
 // C3 - RFM (frecuencia y recencia)
 Clientes Frecuentes =
@@ -122,7 +134,9 @@ Motivos de Descarte =
 // P3 - Inventario
 Unidades en Stock = SUM ( FactInventorySnapshot[Quantity] )                    // 335.974
 Valor del Inventario = SUM ( FactInventorySnapshot[InventoryValue] )
-Productos con Existencia = DISTINCTCOUNT ( FactInventorySnapshot[ProductKey] ) // 432
+Productos con Registro de Stock = DISTINCTCOUNT ( FactInventorySnapshot[ProductKey] ) // 432
+Productos con Existencia =
+    CALCULATE ( DISTINCTCOUNT ( FactInventorySnapshot[ProductKey] ), FactInventorySnapshot[Quantity] > 0 ) // 428
 Productos bajo Punto de Reorden =
     COUNTROWS (
         FILTER (

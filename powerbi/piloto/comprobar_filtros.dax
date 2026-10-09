@@ -1,0 +1,59 @@
+// Ejecutar en la vista Consulta DAX del piloto, despues de actualizar sus datos.
+// Comparar con referencia_sql.json. No es una medida: es una consulta EVALUATE.
+DEFINE
+    VAR Base =
+        ROW (
+            "Escenario", "sin_filtros",
+            "Lineas", COALESCE ( COUNTROWS ( FactSales ), 0 ),
+            "Ventas", [Ventas Netas], "Costo", [Costo de Ventas],
+            "Margen", [Margen Bruto], "MargenPct", [Margen Bruto %],
+            "Ordenes", [Ordenes], "Ticket", [Ticket Promedio],
+            "Unidades", [Unidades Vendidas]
+        )
+EVALUATE
+UNION (
+    Base,
+    CALCULATETABLE (
+        ROW ( "Escenario", "anio_2013", "Lineas", COALESCE(COUNTROWS(FactSales),0),
+              "Ventas", [Ventas Netas], "Costo", [Costo de Ventas], "Margen", [Margen Bruto],
+              "MargenPct", [Margen Bruto %], "Ordenes", [Ordenes], "Ticket", [Ticket Promedio], "Unidades", [Unidades Vendidas] ),
+        TREATAS ( {2013}, DimDate[Year] )
+    ),
+    CALCULATETABLE (
+        ROW ( "Escenario", "southwest", "Lineas", COALESCE(COUNTROWS(FactSales),0),
+              "Ventas", [Ventas Netas], "Costo", [Costo de Ventas], "Margen", [Margen Bruto],
+              "MargenPct", [Margen Bruto %], "Ordenes", [Ordenes], "Ticket", [Ticket Promedio], "Unidades", [Unidades Vendidas] ),
+        TREATAS ( {"Southwest"}, DimTerritory[TerritoryName] )
+    ),
+    CALCULATETABLE (
+        ROW ( "Escenario", "2013_southwest", "Lineas", COALESCE(COUNTROWS(FactSales),0),
+              "Ventas", [Ventas Netas], "Costo", [Costo de Ventas], "Margen", [Margen Bruto],
+              "MargenPct", [Margen Bruto %], "Ordenes", [Ordenes], "Ticket", [Ticket Promedio], "Unidades", [Unidades Vendidas] ),
+        TREATAS ( {2013}, DimDate[Year] ), TREATAS ( {"Southwest"}, DimTerritory[TerritoryName] )
+    ),
+    CALCULATETABLE (
+        ROW ( "Escenario", "junio_2013", "Lineas", COALESCE(COUNTROWS(FactSales),0),
+              "Ventas", [Ventas Netas], "Costo", [Costo de Ventas], "Margen", [Margen Bruto],
+              "MargenPct", [Margen Bruto %], "Ordenes", [Ordenes], "Ticket", [Ticket Promedio], "Unidades", [Unidades Vendidas] ),
+        TREATAS ( {2013}, DimDate[Year] ), TREATAS ( {6}, DimDate[Month] )
+    ),
+    CALCULATETABLE (
+        ROW ( "Escenario", "online", "Lineas", COALESCE(COUNTROWS(FactSales),0),
+              "Ventas", [Ventas Netas], "Costo", [Costo de Ventas], "Margen", [Margen Bruto],
+              "MargenPct", [Margen Bruto %], "Ordenes", [Ordenes], "Ticket", [Ticket Promedio], "Unidades", [Unidades Vendidas] ),
+        TREATAS ( {"Online"}, FactSales[Canal] )
+    ),
+    CALCULATETABLE (
+        ROW ( "Escenario", "2013_southwest_online", "Lineas", COALESCE(COUNTROWS(FactSales),0),
+              "Ventas", [Ventas Netas], "Costo", [Costo de Ventas], "Margen", [Margen Bruto],
+              "MargenPct", [Margen Bruto %], "Ordenes", [Ordenes], "Ticket", [Ticket Promedio], "Unidades", [Unidades Vendidas] ),
+        TREATAS ( {2013}, DimDate[Year] ), TREATAS ( {"Southwest"}, DimTerritory[TerritoryName] ), TREATAS ( {"Online"}, FactSales[Canal] )
+    ),
+    CALCULATETABLE (
+        ROW ( "Escenario", "sin_ventas_2010", "Lineas", COALESCE(COUNTROWS(FactSales),0),
+              "Ventas", [Ventas Netas], "Costo", [Costo de Ventas], "Margen", [Margen Bruto],
+              "MargenPct", [Margen Bruto %], "Ordenes", [Ordenes], "Ticket", [Ticket Promedio], "Unidades", [Unidades Vendidas] ),
+        TREATAS ( {2010}, DimDate[Year] )
+    )
+)
+ORDER BY [Escenario]

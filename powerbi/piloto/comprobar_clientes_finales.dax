@@ -1,0 +1,34 @@
+// Consulta para la Vista de consultas DAX. No pegar como medida.
+// Comparar con clientes-finales.md y database/reports/05_clientes_finales.sql.
+EVALUATE
+ROW (
+    "C2_VentaPorComprador", [C2 Venta por Comprador],
+    "C2_VentaTop10", [C2 Venta Top 10 Total],
+    "C2_Concentracion", [C2 Participacion Top 10],
+    "C3_Unica", [C3 Compra Unica],
+    "C3_Recurrentes", [C3 Recurrentes],
+    "C3_Frecuentes", [C3 Frecuentes],
+    "C3_Recencia", [C3 Recencia Media],
+    "C3_Referencia", [C3 Fecha de Referencia],
+    "C4_Paises", [C4 Paises],
+    "C4_Provincias", [C4 Provincias],
+    "C4_Ciudades", [C4 Ciudades],
+    "C4_SinPais", [C4 Sin Pais],
+    "C5_OrdenesOnline", [C5 Ordenes Online],
+    "C5_OrdenesAsistidas", [C5 Ordenes Asistidas],
+    "C5_TicketOnline", [C5 Ticket Online],
+    "C5_TicketAsistido", [C5 Ticket Asistidas]
+)
+
+// Periodo sin ventas: C2 y C3 no inventan importes/recencia; C4 conserva la cartera.
+EVALUATE
+CALCULATETABLE (
+    ROW (
+        "Caso", "2010_sin_ventas", "VentaTop10", [C2 Venta Top 10 Total],
+        "CompraUnica", [C3 Compra Unica], "Recurrentes", [C3 Recurrentes],
+        "Frecuentes", [C3 Frecuentes], "Recencia", [C3 Recencia Media],
+        "PaisesCartera", [C4 Paises], "CiudadesCartera", [C4 Ciudades],
+        "Online", [C5 Ordenes Online], "Asistidas", [C5 Ordenes Asistidas]
+    ),
+    TREATAS ( {2010}, DimDate[Year] )
+)

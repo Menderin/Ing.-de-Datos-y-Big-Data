@@ -1,236 +1,126 @@
--- ==============================================================================
--- 05_audit_and_validation.sql
--- Auditoría de Integridad y Cuadratura: OLTP vs Data Warehouse (DW)
--- Proyecto: Ingeniería de Datos y Big Data - Entrega 2
--- ==============================================================================
-
-USE [AdventureWorksDW];
+-- Auditoria de filas aceptadas, rechazos explicados y cuadratura.
+USE [$(TargetDatabase)];
 GO
-
 SET NOCOUNT ON;
+CREATE TABLE #Audit (Control nvarchar(128), Expected decimal(38,6), Actual decimal(38,6));
+INSERT #Audit SELECT N'Filas DimCustomer',(SELECT COUNT_BIG(*)+0 FROM #src_Sales_Customer),(SELECT COUNT_BIG(*) FROM dbo.DimCustomer);
+INSERT #Audit SELECT N'Filas DimProduct',(SELECT COUNT_BIG(*)+0 FROM #src_Production_Product),(SELECT COUNT_BIG(*) FROM dbo.DimProduct);
+INSERT #Audit SELECT N'Filas DimTerritory',(SELECT COUNT_BIG(*)+0 FROM #src_Sales_SalesTerritory),(SELECT COUNT_BIG(*) FROM dbo.DimTerritory);
+INSERT #Audit SELECT N'Filas DimSalesPerson',(SELECT COUNT_BIG(*)+1 FROM #src_Sales_SalesPerson),(SELECT COUNT_BIG(*) FROM dbo.DimSalesPerson);
+INSERT #Audit SELECT N'Filas DimSpecialOffer',(SELECT COUNT_BIG(*)+0 FROM #src_Sales_SpecialOffer),(SELECT COUNT_BIG(*) FROM dbo.DimSpecialOffer);
+INSERT #Audit SELECT N'Filas DimLocation',(SELECT COUNT_BIG(*)+0 FROM #src_Production_Location),(SELECT COUNT_BIG(*) FROM dbo.DimLocation);
+INSERT #Audit SELECT N'Filas DimScrapReason',(SELECT COUNT_BIG(*)+1 FROM #src_Production_ScrapReason),(SELECT COUNT_BIG(*) FROM dbo.DimScrapReason);
+INSERT #Audit SELECT N'Filas FactSales',(SELECT COUNT_BIG(*)+0 FROM #src_Sales_SalesOrderDetail),(SELECT COUNT_BIG(*) FROM dbo.FactSales);
+INSERT #Audit SELECT N'Filas FactWorkOrder',(SELECT COUNT_BIG(*)+0 FROM #src_Production_WorkOrder),(SELECT COUNT_BIG(*) FROM dbo.FactWorkOrder);
+INSERT #Audit SELECT N'Filas FactWorkOrderRouting',(SELECT COUNT_BIG(*)+0 FROM #src_Production_WorkOrderRouting),(SELECT COUNT_BIG(*) FROM dbo.FactWorkOrderRouting);
+INSERT #Audit SELECT N'Filas FactInventorySnapshot',(SELECT COUNT_BIG(*)+0 FROM #src_Production_ProductInventory),(SELECT COUNT_BIG(*) FROM dbo.FactInventorySnapshot);
+INSERT #Audit SELECT N'Ventas netas',COALESCE((SELECT SUM(LineTotal) FROM #src_Sales_SalesOrderDetail),0),COALESCE((SELECT SUM(LineTotal) FROM dbo.FactSales),0);
+INSERT #Audit SELECT N'Unidades vendidas',COALESCE((SELECT SUM(CAST(OrderQty AS bigint)) FROM #src_Sales_SalesOrderDetail),0),COALESCE((SELECT SUM(CAST(OrderQty AS bigint)) FROM dbo.FactSales),0);
+INSERT #Audit SELECT N'Unidades planificadas',COALESCE((SELECT SUM(CAST(OrderQty AS bigint)) FROM #src_Production_WorkOrder),0),COALESCE((SELECT SUM(CAST(OrderQty AS bigint)) FROM dbo.FactWorkOrder),0);
+INSERT #Audit SELECT N'Unidades desechadas',COALESCE((SELECT SUM(CAST(ScrappedQty AS bigint)) FROM #src_Production_WorkOrder),0),COALESCE((SELECT SUM(CAST(ScrappedQty AS bigint)) FROM dbo.FactWorkOrder),0);
+INSERT #Audit SELECT N'Horas reales',COALESCE((SELECT SUM(ActualResourceHrs) FROM #src_Production_WorkOrderRouting),0),COALESCE((SELECT SUM(ActualResourceHrs) FROM dbo.FactWorkOrderRouting),0);
+INSERT #Audit SELECT N'Costo real',COALESCE((SELECT SUM(CAST(ActualCost AS decimal(38,4))) FROM #src_Production_WorkOrderRouting),0),COALESCE((SELECT SUM(CAST(ActualCost AS decimal(38,4))) FROM dbo.FactWorkOrderRouting),0);
+INSERT #Audit SELECT N'Stock fisico',COALESCE((SELECT SUM(CAST(Quantity AS bigint)) FROM #src_Production_ProductInventory),0),COALESCE((SELECT SUM(CAST(Quantity AS bigint)) FROM dbo.FactInventorySnapshot),0);
+-- PRINT evita que sqlcmd reserve el ancho completo de nvarchar/decimal.
+-- Solo cambia la presentacion: la auditoria usa los valores originales.
+PRINT '';
+PRINT 'CUADRATURA DE LA CARGA (antes de publicar)';
+PRINT REPLICATE('-',78);
+PRINT LEFT('Control'+SPACE(28),28)+' '+RIGHT(SPACE(19)+'Fuente aceptada',19)+' '+RIGHT(SPACE(19)+'DW',19)+' Estado';
+PRINT REPLICATE('-',78);
+DECLARE @control nvarchar(128), @expected decimal(38,6), @actual decimal(38,6);
+DECLARE @expectedText nvarchar(60), @actualText nvarchar(60), @auditState varchar(9);
+DECLARE audit_output CURSOR LOCAL FAST_FORWARD FOR SELECT Control,Expected,Actual FROM #Audit ORDER BY
+ CASE WHEN Control LIKE 'Filas %' THEN 0 ELSE 1 END,Control;
+OPEN audit_output;
+FETCH NEXT FROM audit_output INTO @control,@expected,@actual;
+WHILE @@FETCH_STATUS=0
+BEGIN
+ SET @expectedText=FORMAT(@expected,N'#,##0.######','es-CL');
+ SET @actualText=FORMAT(@actual,N'#,##0.######','es-CL');
+ SET @auditState=CASE WHEN ABS(@expected-@actual)<0.01 THEN 'OK' ELSE 'DESCUADRE' END;
+ IF LEN(@expectedText)<=19 AND LEN(@actualText)<=19
+  PRINT LEFT(@control+SPACE(28),28)+' '+RIGHT(SPACE(19)+@expectedText,19)+' '+RIGHT(SPACE(19)+@actualText,19)+' '+@auditState;
+ ELSE BEGIN
+  -- No cortar importes extremos para que entren en una columna.
+  PRINT @control+' ['+@auditState+']';
+  PRINT '  Fuente: '+@expectedText;
+  PRINT '  DW:     '+@actualText;
+ END;
+ FETCH NEXT FROM audit_output INTO @control,@expected,@actual;
+END;
+CLOSE audit_output;
+DEALLOCATE audit_output;
+PRINT REPLICATE('-',78);
+IF EXISTS (SELECT 1 FROM #Audit WHERE ABS(Expected-Actual)>=0.01)
+ THROW 51004, 'Descuadre interno entre staging aceptado y DW. Se revierte la carga.', 1;
 
-PRINT '==============================================================================';
-PRINT 'AUDITORIA DE CONTROL Y CUADRATURA: AdventureWorks2022 vs AdventureWorksDW';
-PRINT '==============================================================================';
+-- Cada fila recibida se carga en staging o tiene al menos un motivo de rechazo.
+IF EXISTS (
+ SELECT 1 FROM dbo.EtlTableSummary q JOIN #EtlContext c ON q.RunID=c.RunID
+ OUTER APPLY (SELECT COUNT_BIG(DISTINCT i.SourceRowID) AS n FROM dbo.EtlIssue i
+ WHERE i.RunID=q.RunID AND i.SourceTable=q.SourceTable AND i.Severity='REJECT') r
+ WHERE q.Received<>q.Accepted+r.n OR q.Rejected<>r.n)
+ THROW 51005, 'Hay filas perdidas sin rechazo registrado. Se revierte la carga.', 1;
 
--- ------------------------------------------------------------------------------
--- 1. Comparación de Volumetría por Tabla
--- ------------------------------------------------------------------------------
-SELECT 
-    'DimCustomer' AS Tabla,
-    (SELECT COUNT(*) FROM AdventureWorks2022.Sales.Customer) AS Filas_OLTP,
-    (SELECT COUNT(*) FROM dbo.DimCustomer) AS Filas_DW,
-    CASE 
-        WHEN (SELECT COUNT(*) FROM AdventureWorks2022.Sales.Customer) = (SELECT COUNT(*) FROM dbo.DimCustomer) 
-        THEN 'OK' ELSE 'ERROR' 
-    END AS Estado
-UNION ALL
-SELECT 
-    'DimProduct',
-    (SELECT COUNT(*) FROM AdventureWorks2022.Production.Product),
-    (SELECT COUNT(*) FROM dbo.DimProduct),
-    CASE 
-        WHEN (SELECT COUNT(*) FROM AdventureWorks2022.Production.Product) = (SELECT COUNT(*) FROM dbo.DimProduct) 
-        THEN 'OK' ELSE 'ERROR' 
-    END
-UNION ALL
-SELECT 
-    'DimTerritory',
-    (SELECT COUNT(*) FROM AdventureWorks2022.Sales.SalesTerritory),
-    (SELECT COUNT(*) FROM dbo.DimTerritory),
-    CASE 
-        WHEN (SELECT COUNT(*) FROM AdventureWorks2022.Sales.SalesTerritory) = (SELECT COUNT(*) FROM dbo.DimTerritory) 
-        THEN 'OK' ELSE 'ERROR' 
-    END
-UNION ALL
-SELECT 
-    'DimSalesPerson (incluye Canal Digital)',
-    (SELECT COUNT(*) FROM AdventureWorks2022.Sales.SalesPerson) + 1,
-    (SELECT COUNT(*) FROM dbo.DimSalesPerson),
-    CASE 
-        WHEN (SELECT COUNT(*) FROM AdventureWorks2022.Sales.SalesPerson) + 1 = (SELECT COUNT(*) FROM dbo.DimSalesPerson) 
-        THEN 'OK' ELSE 'ERROR' 
-    END
-UNION ALL
-SELECT 
-    'DimSpecialOffer',
-    (SELECT COUNT(*) FROM AdventureWorks2022.Sales.SpecialOffer),
-    (SELECT COUNT(*) FROM dbo.DimSpecialOffer),
-    CASE 
-        WHEN (SELECT COUNT(*) FROM AdventureWorks2022.Sales.SpecialOffer) = (SELECT COUNT(*) FROM dbo.DimSpecialOffer) 
-        THEN 'OK' ELSE 'ERROR' 
-    END
-UNION ALL
-SELECT 
-    'DimLocation',
-    (SELECT COUNT(*) FROM AdventureWorks2022.Production.Location),
-    (SELECT COUNT(*) FROM dbo.DimLocation),
-    CASE 
-        WHEN (SELECT COUNT(*) FROM AdventureWorks2022.Production.Location) = (SELECT COUNT(*) FROM dbo.DimLocation) 
-        THEN 'OK' ELSE 'ERROR' 
-    END
-UNION ALL
-SELECT 
-    'DimScrapReason (incluye Conforme)',
-    (SELECT COUNT(*) FROM AdventureWorks2022.Production.ScrapReason) + 1,
-    (SELECT COUNT(*) FROM dbo.DimScrapReason),
-    CASE 
-        WHEN (SELECT COUNT(*) FROM AdventureWorks2022.Production.ScrapReason) + 1 = (SELECT COUNT(*) FROM dbo.DimScrapReason) 
-        THEN 'OK' ELSE 'ERROR' 
-    END
-UNION ALL
-SELECT 
-    'FactSales',
-    (SELECT COUNT(*) FROM AdventureWorks2022.Sales.SalesOrderDetail),
-    (SELECT COUNT(*) FROM dbo.FactSales),
-    CASE 
-        WHEN (SELECT COUNT(*) FROM AdventureWorks2022.Sales.SalesOrderDetail) = (SELECT COUNT(*) FROM dbo.FactSales) 
-        THEN 'OK' ELSE 'ERROR' 
-    END
-UNION ALL
-SELECT 
-    'FactWorkOrder',
-    (SELECT COUNT(*) FROM AdventureWorks2022.Production.WorkOrder),
-    (SELECT COUNT(*) FROM dbo.FactWorkOrder),
-    CASE 
-        WHEN (SELECT COUNT(*) FROM AdventureWorks2022.Production.WorkOrder) = (SELECT COUNT(*) FROM dbo.FactWorkOrder) 
-        THEN 'OK' ELSE 'ERROR' 
-    END
-UNION ALL
-SELECT 
-    'FactWorkOrderRouting',
-    (SELECT COUNT(*) FROM AdventureWorks2022.Production.WorkOrderRouting),
-    (SELECT COUNT(*) FROM dbo.FactWorkOrderRouting),
-    CASE 
-        WHEN (SELECT COUNT(*) FROM AdventureWorks2022.Production.WorkOrderRouting) = (SELECT COUNT(*) FROM dbo.FactWorkOrderRouting) 
-        THEN 'OK' ELSE 'ERROR' 
-    END
-UNION ALL
-SELECT 
-    'FactInventorySnapshot',
-    (SELECT COUNT(*) FROM AdventureWorks2022.Production.ProductInventory),
-    (SELECT COUNT(*) FROM dbo.FactInventorySnapshot),
-    CASE 
-        WHEN (SELECT COUNT(*) FROM AdventureWorks2022.Production.ProductInventory) = (SELECT COUNT(*) FROM dbo.FactInventorySnapshot) 
-        THEN 'OK' ELSE 'ERROR' 
-    END;
+CREATE TABLE #ConstraintErrors ([Table] nvarchar(256),[Constraint] nvarchar(256),[Where] nvarchar(max));
+INSERT #ConstraintErrors EXEC('DBCC CHECKCONSTRAINTS WITH ALL_CONSTRAINTS, NO_INFOMSGS');
+IF EXISTS (SELECT 1 FROM #ConstraintErrors)
+ THROW 51006, 'Integridad referencial o restricciones del DW invalidas.', 1;
 
--- ------------------------------------------------------------------------------
--- 2. Cuadratura Monetaria y Cuantitativa de Hechos
--- ------------------------------------------------------------------------------
-SELECT 
-    'Total Ventas Netas (LineTotal)' AS Metrica,
-    CAST((SELECT SUM(LineTotal) FROM AdventureWorks2022.Sales.SalesOrderDetail) AS NUMERIC(18,2)) AS Valor_OLTP,
-    CAST((SELECT SUM(LineTotal) FROM dbo.FactSales) AS NUMERIC(18,2)) AS Valor_DW,
-    CASE 
-        WHEN ABS((SELECT SUM(LineTotal) FROM AdventureWorks2022.Sales.SalesOrderDetail) - (SELECT SUM(LineTotal) FROM dbo.FactSales)) < 0.01 
-        THEN 'CUADRA EXACTO' ELSE 'DESCUADRE' 
-    END AS Estado
-UNION ALL
-SELECT 
-    'Unidades Vendidas (OrderQty)',
-    (SELECT SUM(OrderQty) FROM AdventureWorks2022.Sales.SalesOrderDetail),
-    (SELECT SUM(OrderQty) FROM dbo.FactSales),
-    CASE 
-        WHEN (SELECT SUM(OrderQty) FROM AdventureWorks2022.Sales.SalesOrderDetail) = (SELECT SUM(OrderQty) FROM dbo.FactSales) 
-        THEN 'CUADRA EXACTO' ELSE 'DESCUADRE' 
-    END
-UNION ALL
-SELECT 
-    'Unidades Planificadas (WorkOrder)',
-    (SELECT SUM(OrderQty) FROM AdventureWorks2022.Production.WorkOrder),
-    (SELECT SUM(OrderQty) FROM dbo.FactWorkOrder),
-    CASE 
-        WHEN (SELECT SUM(OrderQty) FROM AdventureWorks2022.Production.WorkOrder) = (SELECT SUM(OrderQty) FROM dbo.FactWorkOrder) 
-        THEN 'CUADRA EXACTO' ELSE 'DESCUADRE' 
-    END
-UNION ALL
-SELECT 
-    'Unidades Desechadas (Scrap)',
-    (SELECT SUM(ScrappedQty) FROM AdventureWorks2022.Production.WorkOrder),
-    (SELECT SUM(ScrappedQty) FROM dbo.FactWorkOrder),
-    CASE 
-        WHEN (SELECT SUM(ScrappedQty) FROM AdventureWorks2022.Production.WorkOrder) = (SELECT SUM(ScrappedQty) FROM dbo.FactWorkOrder) 
-        THEN 'CUADRA EXACTO' ELSE 'DESCUADRE' 
-    END
-UNION ALL
-SELECT 
-    'Horas Reales Operaciones',
-    CAST((SELECT SUM(ActualResourceHrs) FROM AdventureWorks2022.Production.WorkOrderRouting) AS NUMERIC(18,2)),
-    CAST((SELECT SUM(ActualResourceHrs) FROM dbo.FactWorkOrderRouting) AS NUMERIC(18,2)),
-    CASE 
-        WHEN ABS((SELECT SUM(ActualResourceHrs) FROM AdventureWorks2022.Production.WorkOrderRouting) - (SELECT SUM(ActualResourceHrs) FROM dbo.FactWorkOrderRouting)) < 0.01 
-        THEN 'CUADRA EXACTO' ELSE 'DESCUADRE' 
-    END
-UNION ALL
-SELECT 
-    'Costo Real de Operaciones',
-    CAST((SELECT SUM(ActualCost) FROM AdventureWorks2022.Production.WorkOrderRouting) AS NUMERIC(18,2)),
-    CAST((SELECT SUM(ActualCost) FROM dbo.FactWorkOrderRouting) AS NUMERIC(18,2)),
-    CASE 
-        WHEN ABS((SELECT SUM(ActualCost) FROM AdventureWorks2022.Production.WorkOrderRouting) - (SELECT SUM(ActualCost) FROM dbo.FactWorkOrderRouting)) < 0.01 
-        THEN 'CUADRA EXACTO' ELSE 'DESCUADRE' 
-    END
-UNION ALL
-SELECT 
-    'Stock Físico en Almacén',
-    (SELECT SUM(Quantity) FROM AdventureWorks2022.Production.ProductInventory),
-    (SELECT SUM(Quantity) FROM dbo.FactInventorySnapshot),
-    CASE 
-        WHEN (SELECT SUM(Quantity) FROM AdventureWorks2022.Production.ProductInventory) = (SELECT SUM(Quantity) FROM dbo.FactInventorySnapshot) 
-        THEN 'CUADRA EXACTO' ELSE 'DESCUADRE' 
-    END;
+UPDATE r SET FinishedAt=SYSUTCDATETIME(),
+ Status=CASE WHEN EXISTS(SELECT 1 FROM dbo.EtlIssue i WHERE i.RunID=r.RunID AND Severity IN ('WARNING','REJECT'))
+ THEN 'COMPLETED_WITH_WARNINGS' ELSE 'COMPLETED' END
+FROM dbo.EtlRun r JOIN #EtlContext c ON r.RunID=c.RunID;
+COMMIT TRANSACTION;
 
--- ------------------------------------------------------------------------------
--- 3. Verificación de Cero Huérfanos / Integridad Referencial
--- ------------------------------------------------------------------------------
-SELECT 
-    'FactSales' AS Tabla_Hecho,
-    SUM(CASE WHEN dc.CustomerKey IS NULL THEN 1 ELSE 0 END) AS Clientes_Huerfanos,
-    SUM(CASE WHEN dp.ProductKey IS NULL THEN 1 ELSE 0 END) AS Productos_Huerfanos,
-    SUM(CASE WHEN dt.TerritoryKey IS NULL THEN 1 ELSE 0 END) AS Territorios_Huerfanos,
-    SUM(CASE WHEN dd.DateKey IS NULL THEN 1 ELSE 0 END) AS Fechas_Huerfanas
-FROM dbo.FactSales f
-LEFT JOIN dbo.DimCustomer dc ON f.CustomerKey = dc.CustomerKey
-LEFT JOIN dbo.DimProduct dp ON f.ProductKey = dp.ProductKey
-LEFT JOIN dbo.DimTerritory dt ON f.TerritoryKey = dt.TerritoryKey
-LEFT JOIN dbo.DimDate dd ON f.OrderDateKey = dd.DateKey;
-
--- ------------------------------------------------------------------------------
--- 4. Huerfanos en las demas tablas de hechos y calidad de dimensiones
--- ------------------------------------------------------------------------------
-SELECT 'FactSales (vendedor/oferta/fechas entrega)' AS Control,
-    SUM(CASE WHEN sp.SalesPersonKey IS NULL THEN 1 ELSE 0 END)
-  + SUM(CASE WHEN so.SpecialOfferKey IS NULL THEN 1 ELSE 0 END)
-  + SUM(CASE WHEN dd.DateKey IS NULL THEN 1 ELSE 0 END)
-  + SUM(CASE WHEN ds.DateKey IS NULL THEN 1 ELSE 0 END) AS Huerfanos
-FROM dbo.FactSales f
-LEFT JOIN dbo.DimSalesPerson sp ON f.SalesPersonKey = sp.SalesPersonKey
-LEFT JOIN dbo.DimSpecialOffer so ON f.SpecialOfferKey = so.SpecialOfferKey
-LEFT JOIN dbo.DimDate dd ON f.DueDateKey = dd.DateKey
-LEFT JOIN dbo.DimDate ds ON f.ShipDateKey = ds.DateKey
-UNION ALL
-SELECT 'FactWorkOrder',
-    SUM(CASE WHEN dp.ProductKey IS NULL THEN 1 ELSE 0 END)
-  + SUM(CASE WHEN sr.ScrapReasonKey IS NULL THEN 1 ELSE 0 END)
-  + SUM(CASE WHEN d1.DateKey IS NULL THEN 1 ELSE 0 END)
-  + SUM(CASE WHEN d2.DateKey IS NULL THEN 1 ELSE 0 END)
-FROM dbo.FactWorkOrder f
-LEFT JOIN dbo.DimProduct dp ON f.ProductKey = dp.ProductKey
-LEFT JOIN dbo.DimScrapReason sr ON f.ScrapReasonKey = sr.ScrapReasonKey
-LEFT JOIN dbo.DimDate d1 ON f.StartDateKey = d1.DateKey
-LEFT JOIN dbo.DimDate d2 ON f.EndDateKey = d2.DateKey
-UNION ALL
-SELECT 'FactWorkOrderRouting',
-    SUM(CASE WHEN dp.ProductKey IS NULL THEN 1 ELSE 0 END)
-  + SUM(CASE WHEN dl.LocationKey IS NULL THEN 1 ELSE 0 END)
-FROM dbo.FactWorkOrderRouting f
-LEFT JOIN dbo.DimProduct dp ON f.ProductKey = dp.ProductKey
-LEFT JOIN dbo.DimLocation dl ON f.LocationKey = dl.LocationKey
-UNION ALL
-SELECT 'DimCustomer sin direccion (esperado 0)', COUNT(*)
-FROM dbo.DimCustomer WHERE City = 'No Informado' OR CountryRegionName = 'No Informado'
-UNION ALL
-SELECT 'DimCustomer sin territorio (esperado 0)', COUNT(*)
-FROM dbo.DimCustomer WHERE TerritoryName = 'No Informado';
+PRINT '';
+PRINT 'RESUMEN DE LA EJECUCION';
+PRINT REPLICATE('-',78);
+DECLARE @run uniqueidentifier, @source sysname, @status varchar(30), @start datetime2, @finish datetime2;
+SELECT @run=r.RunID,@source=r.SourceDatabase,@status=r.Status,@start=r.StartedAt,@finish=r.FinishedAt
+FROM dbo.EtlRun r JOIN #EtlContext c ON r.RunID=c.RunID;
+PRINT 'Estado:     '+@status;
+PRINT 'Origen:     '+@source;
+PRINT 'Destino:    '+DB_NAME();
+PRINT 'Ejecucion:  '+CONVERT(varchar(36),@run);
+PRINT 'Inicio UTC: '+CONVERT(varchar(19),@start,120);
+PRINT 'Fin UTC:    '+CONVERT(varchar(19),@finish,120);
+PRINT '';
+PRINT 'FILAS POR TABLA FUENTE';
+PRINT REPLICATE('-',78);
+PRINT LEFT('Tabla'+SPACE(32),32)+' '+RIGHT(SPACE(14)+'Recibidas',14)+' '+RIGHT(SPACE(14)+'Aceptadas',14)+' '+RIGHT(SPACE(14)+'Rechazadas',14);
+PRINT REPLICATE('-',78);
+DECLARE @table nvarchar(128), @received bigint, @accepted bigint, @rejected bigint;
+DECLARE summary_output CURSOR LOCAL FAST_FORWARD FOR
+ SELECT SourceTable,Received,Accepted,Rejected FROM dbo.EtlTableSummary WHERE RunID=@run ORDER BY SourceTable;
+OPEN summary_output;
+FETCH NEXT FROM summary_output INTO @table,@received,@accepted,@rejected;
+WHILE @@FETCH_STATUS=0
+BEGIN
+ IF LEN(CONVERT(varchar(20),@received))<=14
+  PRINT LEFT(@table+SPACE(32),32)+' '+RIGHT(SPACE(14)+CONVERT(varchar(20),@received),14)+' '+RIGHT(SPACE(14)+CONVERT(varchar(20),@accepted),14)+' '+RIGHT(SPACE(14)+CONVERT(varchar(20),@rejected),14);
+ ELSE BEGIN
+  PRINT @table;
+  PRINT '  Recibidas: '+CONVERT(varchar(20),@received);
+  PRINT '  Aceptadas: '+CONVERT(varchar(20),@accepted);
+  PRINT '  Rechazadas: '+CONVERT(varchar(20),@rejected);
+ END;
+ FETCH NEXT FROM summary_output INTO @table,@received,@accepted,@rejected;
+END;
+CLOSE summary_output;
+DEALLOCATE summary_output;
+PRINT REPLICATE('-',78);
+DECLARE @normalized bigint,@warnings bigint,@rejects bigint;
+SELECT @normalized=COUNT_BIG(*) FROM dbo.EtlIssue WHERE RunID=@run AND Severity='NORMALIZED';
+SELECT @warnings=COUNT_BIG(*) FROM dbo.EtlIssue WHERE RunID=@run AND Severity='WARNING';
+SELECT @rejects=COUNT_BIG(*) FROM dbo.EtlIssue WHERE RunID=@run AND Severity='REJECT';
+PRINT '';
+PRINT 'INCIDENCIAS';
+PRINT '  Normalizaciones:     '+CONVERT(varchar(20),@normalized);
+PRINT '  Advertencias:        '+CONVERT(varchar(20),@warnings);
+PRINT '  Motivos de rechazo:  '+CONVERT(varchar(20),@rejects);
+PRINT '  Una fila puede tener varios motivos de rechazo.';
+PRINT '';
+PRINT 'Carga publicada. Detalle: EtlRun, EtlTableSummary y EtlIssue.';
 GO

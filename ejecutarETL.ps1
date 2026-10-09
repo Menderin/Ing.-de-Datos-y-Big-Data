@@ -1,82 +1,67 @@
 <#
 .SYNOPSIS
-    Orquestador del proceso ETL para la Entrega 2.
-.DESCRIPTION
-    Ejecuta la creación del Data Warehouse (AdventureWorksDW), carga de dimensiones,
-    carga de tablas de hechos y auditoría de integridad en el contenedor SQL Server de Docker.
+Carga tolerante: staging, rechazos y publicacion atomica del DW.
 #>
-
 [CmdletBinding()]
 param(
-    [string]$ContainerName = "bigdata-sqlserver"
+    [string]$ContainerName = "bigdata-sqlserver",
+    [string]$SourceDatabase = "AdventureWorks2022",
+    [string]$TargetDatabase = "AdventureWorksDW"
 )
-
 $ErrorActionPreference = "Stop"
-$sqlcmdPath = "/opt/mssql-tools18/bin/sqlcmd"
-
-# 1. Validar existencia del archivo .env
-if (-not (Test-Path ".env")) {
-    throw "No existe el archivo .env. Copia primero .env.example a .env y define MSSQL_SA_PASSWORD."
-}
-
-# 2. Obtener contraseña de sa desde .env
-$passwordLine = Get-Content ".env" | Where-Object { $_ -match '^\s*MSSQL_SA_PASSWORD\s*=' } | Select-Object -First 1
-if (-not $passwordLine) {
-    throw "No se encontro MSSQL_SA_PASSWORD en .env"
-}
-$saPassword = ($passwordLine -split "=", 2)[1].Trim().Trim('"').Trim("'")
-if ([string]::IsNullOrWhiteSpace($saPassword)) {
-    throw "MSSQL_SA_PASSWORD esta vacio en .env"
-}
-
-# 3. Validar estado del contenedor Docker
-$running = docker inspect --format '{{.State.Running}}' $ContainerName 2>$null
-if ($running -ne "true") {
-    throw "El contenedor $ContainerName no esta ejecutandose. Inicialo con: docker compose up -d"
-}
-
-Write-Host "============================================================" -ForegroundColor Cyan
-Write-Host " INICIANDO PIPELINE ETL - ENTREGA 2 (DATA WAREHOUSE)        " -ForegroundColor Cyan
-Write-Host " Contenedor: $ContainerName                                 " -ForegroundColor Cyan
-Write-Host " Fecha/Hora: $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')      " -ForegroundColor Cyan
-Write-Host "============================================================" -ForegroundColor Cyan
-
-$scriptSequence = @(
-    @{ Name = "1. Esquema DDL"; File = "database/dw/01_create_dw_schema.sql" },
-    @{ Name = "2. DimDate (Calendario)"; File = "database/dw/02_populate_dim_date.sql" },
-    @{ Name = "3. Dimensiones Maestras"; File = "database/dw/03_etl_dimensions.sql" },
-    @{ Name = "4. Tablas de Hechos"; File = "database/dw/04_etl_facts.sql" },
-    @{ Name = "5. Auditoria de Cuadratura"; File = "database/dw/05_audit_and_validation.sql" }
-)
-
-$stopwatchTotal = [System.Diagnostics.Stopwatch]::StartNew()
-
-foreach ($step in $scriptSequence) {
-    if (-not (Test-Path $step.File)) {
-        throw "No se encontro el archivo $($step.File)"
+foreach ($name in @($SourceDatabase, $TargetDatabase)) {
+    if ($name -notmatch '^[A-Za-z_][A-Za-z0-9_]{0,127}$') {
+        throw "Nombre de base invalido: $name"
     }
-
-    Write-Host "`n>>> Ejecutando: $($step.Name) ($($step.File)) ..." -ForegroundColor Yellow
-    $stopwatchStep = [System.Diagnostics.Stopwatch]::StartNew()
-
-    $content = Get-Content -Path $step.File -Raw -Encoding UTF8
-    $result = $content | docker exec -i -e "SQLCMDPASSWORD=$saPassword" $ContainerName $sqlcmdPath -S localhost -U sa -C -b 2>&1
-    $exitCode = $LASTEXITCODE
-
-    $stopwatchStep.Stop()
-    $result | Write-Host
-
-    if ($exitCode -ne 0) {
-        throw "Fallo en la ejecucion de $($step.File). Revisa los mensajes de sqlcmd."
-    }
-
-    Write-Host "Paso completado en $([math]::Round($stopwatchStep.Elapsed.TotalSeconds, 2)) segundos." -ForegroundColor Green
 }
+if ($SourceDatabase -eq $TargetDatabase -or $TargetDatabase -in @('master','model','msdb','tempdb')) {
+    throw "El destino debe ser una base analitica separada."
+}
+$envPath = Join-Path $PSScriptRoot '.env'
+if (-not (Test-Path $envPath)) { throw 'Configura primero .env.' }
+$line = Get-Content $envPath | Where-Object { $_ -match '^\s*MSSQL_SA_PASSWORD\s*=' } | Select-Object -First 1
+if (-not $line) { throw 'Falta MSSQL_SA_PASSWORD en .env.' }
+$secret = ($line -split '=',2)[1].Trim().Trim('"').Trim("'")
+if ([string]::IsNullOrWhiteSpace($secret)) { throw 'La clave de SQL Server esta vacia.' }
+$running = docker inspect --format '{{.State.Running}}' $ContainerName
+if ($LASTEXITCODE -ne 0 -or $running -ne 'true') { throw 'Inicia SQL Server con docker compose up -d.' }
 
-$stopwatchTotal.Stop()
-
-Write-Host "`n============================================================" -ForegroundColor Cyan
-Write-Host " PIPELINE ETL FINALIZADO EXITOSAMENTE                        " -ForegroundColor Green
-Write-Host " Tiempo total: $([math]::Round($stopwatchTotal.Elapsed.TotalSeconds, 2)) segundos            " -ForegroundColor Green
-Write-Host " Base analitica operativa: AdventureWorksDW                 " -ForegroundColor Green
-Write-Host "============================================================" -ForegroundColor Cyan
+$files = @('00_prepare_source.sql','01_create_dw_schema.sql','02_populate_dim_date.sql',
+    '03_etl_dimensions.sql','04_etl_facts.sql','05_audit_and_validation.sql')
+$parts = [System.Collections.Generic.List[string]]::new()
+$parts.Add("USE master;" + [Environment]::NewLine + "GO")
+$parts.Add("IF DB_ID(N'$SourceDatabase') IS NULL THROW 51007, 'No existe la base fuente.', 1;")
+$parts.Add("IF DB_ID(N'$TargetDatabase') IS NULL EXEC(N'CREATE DATABASE [$TargetDatabase]');")
+$parts.Add("GO")
+foreach ($file in $files) {
+    $parts.Add("PRINT 'Etapa: $file';" + [Environment]::NewLine + "GO")
+    $parts.Add((Get-Content -Raw -Encoding UTF8 (Join-Path $PSScriptRoot "database/dw/$file")))
+    $parts.Add("GO")
+}
+$sql = ($parts -join [Environment]::NewLine).Replace('$(SourceDatabase)', $SourceDatabase).Replace('$(TargetDatabase)', $TargetDatabase)
+$clock = [System.Diagnostics.Stopwatch]::StartNew()
+Write-Host ''
+Write-Host ('=' * 78)
+Write-Host 'PIPELINE ETL - ADVENTUREWORKS'
+Write-Host "Origen: $SourceDatabase"
+Write-Host "Destino: $TargetDatabase"
+Write-Host ('=' * 78)
+$previousEncoding = $OutputEncoding
+$previousConsoleEncoding = [Console]::OutputEncoding
+$previousPassword = $env:SQLCMDPASSWORD
+try {
+    $OutputEncoding = [System.Text.UTF8Encoding]::new($false)
+    [Console]::OutputEncoding = $OutputEncoding
+    $env:SQLCMDPASSWORD = $secret
+    $sql | docker exec -i -e SQLCMDPASSWORD $ContainerName /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -C -b -f 65001 -w 240 | ForEach-Object {
+        if ($_ -notmatch "^Changed database context to '.*'\.$") { Write-Host $_ }
+    }
+    if ($LASTEXITCODE -ne 0) {
+        throw 'Fallo tecnico. Se revierte la carga no publicada; revise el error SQL.'
+    }
+    Write-Host ("ETL terminado en {0:N2} s. Consulte dbo.EtlRun para conocer la calidad." -f $clock.Elapsed.TotalSeconds)
+} finally {
+    $OutputEncoding = $previousEncoding
+    [Console]::OutputEncoding = $previousConsoleEncoding
+    $env:SQLCMDPASSWORD = $previousPassword
+}

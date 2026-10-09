@@ -1,7 +1,15 @@
 # Power BI: conexión y modelo
 
+Ya están definidas en el [proyecto editable](piloto/PilotoVentas.pbip) las 15 páginas C1-C5, P1-P5 y V1-V5: 13 tablas (incluye una auxiliar desconectada), 14 relaciones y 102 medidas. Clientes usa azul; producción, violeta; ventas, verde. Consultar [clientes](piloto/clientes-finales.md), [producción](piloto/produccion-finales.md) y [ventas](piloto/ventas-finales.md). Para cargar las nuevas dimensiones de vendedores/ofertas y columnas de ventas, cerrar/reabrir el PBIP y pulsar **Actualizar**; no repetir el ETL si el DW sigue cargado. V4 analiza vendedores sin cuotas; V5 concilia descuentos y redondeos. Las páginas nuevas requieren revisión visual e interacción en Desktop.
+
 Kit para conectar Power BI Desktop al Data Warehouse `AdventureWorksDW` (Entrega 3).
 Power BI Desktop solo existe para Windows; el SQL Server puede estar en el mismo equipo (Docker Desktop) o en otro accesible por red.
+
+El proyecto comenzó con un [piloto V1 de ventas](piloto/README.md), luego se amplió con clientes y producción en el mismo archivo. No hace falta construir manualmente el modelo para abrirlo.
+
+La guía inicial de [C1 - Panorama de clientes](piloto/C1-panorama-clientes.md) describe esa página, no el tamaño actual del proyecto.
+
+Las instrucciones siguientes corresponden al modelo completo, no al piloto. Los valores de referencia proceden de [controles SQL](../database/reports/README.md); no implican que todas las medidas DAX hayan sido ejecutadas en Power BI.
 
 | Archivo | Contenido |
 |:---|:---|
@@ -13,7 +21,7 @@ Power BI Desktop solo existe para Windows; el SQL Server puede estar en el mismo
 
 ```powershell
 docker compose up -d                 # SQL Server en localhost,1433
-.\ejecutarETL.ps1                    # crea y carga AdventureWorksDW (~6 s)
+.\ejecutarETL.ps1                    # crea y carga AdventureWorksDW
 ```
 
 La auditoría final debe mostrar todo `OK` / `CUADRA EXACTO` y `0` huérfanos.
@@ -23,12 +31,12 @@ La auditoría final debe mostrar todo `OK` / `CUADRA EXACTO` y `0` huérfanos.
 1. Power BI Desktop → **Obtener datos → SQL Server**.
 2. Servidor: `localhost,1433`. Base de datos: `AdventureWorksDW`. Modo: **Importar**.
 3. Credenciales de base de datos: usuario `sa`, contraseña de `.env`.
-4. Si pide cifrado/certificado, aceptar la conexión (el contenedor usa un certificado autofirmado).
+4. Si aparece un aviso de certificado, verificar que se trata del servidor local del proyecto. No aceptar certificados desconocidos ni desactivar globalmente el cifrado.
 5. Seleccionar las 12 tablas (o usar `consultas.m` en el Editor avanzado).
 
 ## 3. Relaciones (esquema en estrella)
 
-Todas **varios a uno**, filtro **unidireccional** (de la dimensión hacia el hecho). Power BI las detecta casi todas solas por el nombre de columna; revisar las marcadas como inactivas.
+Todas **varios a uno**, filtro **unidireccional** (de la dimensión hacia el hecho). Crear o revisar cada relación: no depender de la detección automática.
 
 | Hecho | Columna | Dimensión | Estado |
 |:---|:---|:---|:---|
@@ -85,7 +93,7 @@ Si el modelo está bien armado, las tarjetas deben mostrar:
 ## 6. Particularidades de los datos
 
 - **Rango temporal:** las ventas abarcan 31-05-2011 a 30-06-2014 (2011 y 2014 son años parciales; cuidar la comparación YoY).
-- **Margen bruto ~8,5 %:** resulta de usar el `StandardCost` actual del producto sobre el precio efectivamente cobrado; es el valor real de la fuente.
+- **Margen bruto ~8,5 %:** es una estimación con el `StandardCost` actual del producto y el precio efectivamente cobrado, no un margen contable histórico certificado.
 - **Variación de costo = 0:** en AdventureWorks el costo real de cada operación coincide con el planificado.
 - **`Sin Categoría`:** 209 productos (piezas intermedias y materias primas) no tienen subcategoría; aparecen así en los reportes de producción (23.050 órdenes de trabajo).
 - **Cuotas de vendedores:** `SalesQuota` es un valor único por vendedor, no por periodo.

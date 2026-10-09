@@ -5,7 +5,7 @@
 -- Proyecto: Ingeniería de Datos y Big Data - Entrega 2
 -- ==============================================================================
 
-USE [AdventureWorksDW];
+USE [$(TargetDatabase)];
 GO
 
 SET NOCOUNT ON;
@@ -31,7 +31,7 @@ SELECT
     Name AS TerritoryName,
     CountryRegionCode,
     [Group]
-FROM AdventureWorks2022.Sales.SalesTerritory
+FROM #src_Sales_SalesTerritory
 ORDER BY TerritoryID;
 
 PRINT 'DimTerritory cargada: ' + CAST(@@ROWCOUNT AS VARCHAR(10)) + ' registros.';
@@ -76,9 +76,9 @@ SELECT
     sp.Bonus,
     sp.CommissionPct,
     sp.TerritoryID
-FROM AdventureWorks2022.Sales.SalesPerson sp
-JOIN AdventureWorks2022.Person.Person p ON sp.BusinessEntityID = p.BusinessEntityID
-JOIN AdventureWorks2022.HumanResources.Employee e ON sp.BusinessEntityID = e.BusinessEntityID
+FROM #src_Sales_SalesPerson sp
+JOIN #src_Person_Person p ON sp.BusinessEntityID = p.BusinessEntityID
+JOIN #src_HumanResources_Employee e ON sp.BusinessEntityID = e.BusinessEntityID
 ORDER BY sp.BusinessEntityID;
 
 PRINT 'DimSalesPerson cargada: ' + CAST(@@ROWCOUNT + 1 AS VARCHAR(10)) + ' registros (incluye canal online).';
@@ -115,20 +115,20 @@ SELECT
     COALESCE(c.TerritoryID, 0) AS TerritoryID,
     COALESCE(dt.TerritoryName, 'No Informado') AS TerritoryName,
     COALESCE(dt.[Group], 'No Informado') AS TerritoryGroup
-FROM AdventureWorks2022.Sales.Customer c
+FROM #src_Sales_Customer c
 LEFT JOIN dbo.DimTerritory dt ON c.TerritoryID = dt.TerritoryID
-LEFT JOIN AdventureWorks2022.Person.Person p ON c.PersonID = p.BusinessEntityID
-LEFT JOIN AdventureWorks2022.Sales.Store s ON c.StoreID = s.BusinessEntityID
+LEFT JOIN #src_Person_Person p ON c.PersonID = p.BusinessEntityID
+LEFT JOIN #src_Sales_Store s ON c.StoreID = s.BusinessEntityID
 OUTER APPLY (
     SELECT TOP 1 bea.AddressID
-    FROM AdventureWorks2022.Person.BusinessEntityAddress bea
+    FROM #src_Person_BusinessEntityAddress bea
     -- Para tiendas se usa la direccion de la tienda (StoreID), no la de su contacto (PersonID)
     WHERE bea.BusinessEntityID = COALESCE(c.StoreID, c.PersonID)
-    ORDER BY bea.AddressTypeID
+    ORDER BY bea.AddressTypeID, bea.AddressID
 ) addr_link
-LEFT JOIN AdventureWorks2022.Person.Address a ON addr_link.AddressID = a.AddressID
-LEFT JOIN AdventureWorks2022.Person.StateProvince sp ON a.StateProvinceID = sp.StateProvinceID
-LEFT JOIN AdventureWorks2022.Person.CountryRegion cr ON sp.CountryRegionCode = cr.CountryRegionCode
+LEFT JOIN #src_Person_Address a ON addr_link.AddressID = a.AddressID
+LEFT JOIN #src_Person_StateProvince sp ON a.StateProvinceID = sp.StateProvinceID
+LEFT JOIN #src_Person_CountryRegion cr ON sp.CountryRegionCode = cr.CountryRegionCode
 ORDER BY c.CustomerID;
 
 PRINT 'DimCustomer cargada: ' + CAST(@@ROWCOUNT AS VARCHAR(10)) + ' registros.';
@@ -166,9 +166,9 @@ SELECT
     p.ListPrice,
     COALESCE(psc.Name, 'Sin Subcategoría') AS SubcategoryName,
     COALESCE(pc.Name, 'Sin Categoría') AS CategoryName
-FROM AdventureWorks2022.Production.Product p
-LEFT JOIN AdventureWorks2022.Production.ProductSubcategory psc ON p.ProductSubcategoryID = psc.ProductSubcategoryID
-LEFT JOIN AdventureWorks2022.Production.ProductCategory pc ON psc.ProductCategoryID = pc.ProductCategoryID
+FROM #src_Production_Product p
+LEFT JOIN #src_Production_ProductSubcategory psc ON p.ProductSubcategoryID = psc.ProductSubcategoryID
+LEFT JOIN #src_Production_ProductCategory pc ON psc.ProductCategoryID = pc.ProductCategoryID
 ORDER BY p.ProductID;
 
 PRINT 'DimProduct cargada: ' + CAST(@@ROWCOUNT AS VARCHAR(10)) + ' registros.';
@@ -192,7 +192,7 @@ SELECT
     DiscountPct,
     [Type],
     Category
-FROM AdventureWorks2022.Sales.SpecialOffer
+FROM #src_Sales_SpecialOffer
 ORDER BY SpecialOfferID;
 
 PRINT 'DimSpecialOffer cargada: ' + CAST(@@ROWCOUNT AS VARCHAR(10)) + ' registros.';
@@ -214,7 +214,7 @@ SELECT
     Name AS LocationName,
     CostRate,
     Availability
-FROM AdventureWorks2022.Production.Location
+FROM #src_Production_Location
 ORDER BY LocationID;
 
 PRINT 'DimLocation cargada: ' + CAST(@@ROWCOUNT AS VARCHAR(10)) + ' registros.';
@@ -243,7 +243,7 @@ SELECT
     ScrapReasonID AS ScrapReasonKey,
     ScrapReasonID,
     Name AS ScrapReasonName
-FROM AdventureWorks2022.Production.ScrapReason
+FROM #src_Production_ScrapReason
 ORDER BY ScrapReasonID;
 
 PRINT 'DimScrapReason cargada: ' + CAST(@@ROWCOUNT + 1 AS VARCHAR(10)) + ' registros.';
@@ -251,4 +251,12 @@ PRINT 'DimScrapReason cargada: ' + CAST(@@ROWCOUNT + 1 AS VARCHAR(10)) + ' regis
 PRINT '==============================================================================';
 PRINT 'CARGA DE TODAS LAS DIMENSIONES COMPLETADA';
 PRINT '==============================================================================';
+GO
+
+-- Atributos ausentes no impiden cargar al cliente, pero quedan visibles.
+INSERT dbo.EtlIssue (RunID,SourceTable,SourceRowID,Severity,FieldName,Reason,RawData)
+SELECT c.RunID,N'Sales.Customer',s.__RowID,'WARNING',N'Geografia',
+ N'Direccion o territorio no informado; cliente conservado',s.__Raw
+FROM #src_Sales_Customer s JOIN dbo.DimCustomer d ON s.CustomerID=d.CustomerID
+CROSS JOIN #EtlContext c WHERE d.City=N'No Informado' OR d.CountryRegionName=N'No Informado' OR d.TerritoryName=N'No Informado';
 GO

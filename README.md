@@ -109,7 +109,27 @@ Set-ExecutionPolicy -Scope Process Bypass
 python3 database/etl/run_etl.py
 ```
 
-El pipeline se ejecuta en ~5-7 segundos y deja operativa la base analítica **`AdventureWorksDW`** con 121.317 registros en `FactSales`, 72.591 en `FactWorkOrder`, 67.131 en `FactWorkOrderRouting`, 1.069 en `FactInventorySnapshot` y cero registros huérfanos.
+El pipeline incluye preparación tolerante, registro de incidencias y publicación en una única transacción. Con el respaldo actual deja **`AdventureWorksDW`** con 121.317 registros en `FactSales`, 72.591 en `FactWorkOrder`, 67.131 en `FactWorkOrderRouting` y 1.069 en `FactInventorySnapshot`. La duración depende del equipo y es mayor que en la versión inicial sin validaciones.
+
+Los datos incorrectos se registran y se excluyen sin interrumpir la carga de los válidos. Los nulos permitidos se conservan o se representan como «No informado»; no se inventan cantidades ni importes. Un error técnico revierte la carga y conserva el DW previamente publicado. La fuente transaccional no se modifica.
+
+Para usar otra base ya restaurada, con la misma estructura:
+
+```powershell
+.\ejecutarETL.ps1 -SourceDatabase OtraAdventureWorks -TargetDatabase AdventureWorksDW
+```
+
+Desde SSMS se puede consultar el resultado:
+
+```sql
+USE AdventureWorksDW;
+SELECT TOP (10) * FROM dbo.EtlRun ORDER BY StartedAt DESC;
+DECLARE @run uniqueidentifier = (SELECT TOP (1) RunID FROM dbo.EtlRun ORDER BY StartedAt DESC);
+SELECT * FROM dbo.EtlTableSummary WHERE RunID = @run ORDER BY SourceTable;
+SELECT TOP (100) * FROM dbo.EtlIssue WHERE RunID = @run ORDER BY IssueID;
+```
+
+`COMPLETED_WITH_WARNINGS` significa que se publicó una carga con advertencias o rechazos: los reportes muestran los datos aceptados, no necesariamente toda la fuente. Ver [política de calidad y pruebas](Taller2/calidad-datos-etl.md).
 
 ### 6. Conectarse desde SSMS
 
@@ -129,6 +149,8 @@ Después de conectarse, ambas bases de datos (`AdventureWorks2022` y `AdventureW
 ## Power BI
 
 Consultar [powerbi/README.md](powerbi/README.md): conexión a `localhost,1433`, consultas de Power Query, relaciones del modelo estrella y medidas DAX de los 15 reportes.
+
+Para comenzar sin rehacer los mockups HTML, está preparado un [piloto de ventas en Power BI](powerbi/piloto/README.md). Los indicadores de los 15 reportes cuentan con [consultas y controles SQL](database/reports/README.md). La apertura, actualización y comprobación del piloto en Desktop siguen pendientes.
 
 ## Diseño de Reportes y Mockups
 

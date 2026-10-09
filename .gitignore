@@ -3,6 +3,10 @@
 .env.*
 !.env.example
 
+# Caché de datos y configuración privada de Power BI Projects
+powerbi/**/.pbi/localSettings.json
+powerbi/**/.pbi/cache.abf
+
 # Instrucciones locales para asistentes de desarrollo
 AGENTS.md
 **/AGENTS.md
@@ -39,11 +43,16 @@ Taller1/mocks/dashboard/
 Docs/slide5.png
 
 # Logs y temporales
+__pycache__/
+*.py[cod]
 tmp/
 *.log
 *.tmp
 *.temp
 *.cache
+*.synctex.gz
+# Paquete de exportación: los PNG individuales sí se conservan como evidencia
+Taller2/output/pdf/Reportes_PNG.zip
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*

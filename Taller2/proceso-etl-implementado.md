@@ -2,7 +2,7 @@
 
 ## 1. Arquitectura del Flujo ETL
 
-El proceso de Extracción, Transformación y Carga (ETL) fue diseñado bajo el principio de **máxima eficiencia computacional**, aprovechando que tanto la fuente transaccional (`AdventureWorks2022`) como el repositorio analítico (`AdventureWorksDW`) residen en la misma instancia de Microsoft SQL Server 2022 en Docker.
+El proceso de Extracción, Transformación y Carga (ETL) aprovecha que la fuente transaccional (`AdventureWorks2022`) y el repositorio analítico (`AdventureWorksDW`) residen en la misma instancia de SQL Server 2022 en Docker. La versión actual agrega preparación tolerante, registro de rechazos y publicación transaccional. Las reglas están detalladas en [calidad-datos-etl.md](calidad-datos-etl.md).
 
 ```text
 +------------------------+
@@ -25,7 +25,7 @@ El proceso de Extracción, Transformación y Carga (ETL) fue diseñado bajo el p
 
 ### 2.1 Enfoque Set-Based en Motor Relacional
 - En lugar de extraer fila por fila a través de la red (lo que implicaría serializar más de 300.000 registros y generar cuellos de botella por latencia de socket), el pipeline ejecuta transformaciones basadas en conjuntos directamente en el motor SQL Server.
-- **Rendimiento:** Carga completa en aproximadamente **5 a 7 segundos**.
+- **Rendimiento:** La validación y trazabilidad agregan trabajo respecto de la carga inicial. La duración depende del equipo y de las incidencias; no se garantiza el tiempo de la versión inicial sin estas validaciones.
 
 ### 2.2 Tratamiento de Fechas y Clave Especial `-1`
 - Para fechas nulas o no aplicables (como `ShipDate` en órdenes no despachadas o `ActualEndDate` en operaciones en curso), se asigna la clave `DateKey = -1` ('1900-01-01', 'No Aplica').
@@ -37,7 +37,7 @@ El proceso de Extracción, Transformación y Carga (ETL) fue diseñado bajo el p
 
 ### 2.4 Tratamiento de Vendedores y Canal Digital
 - Las ventas en línea (`OnlineOrderFlag = 1`) no poseen un ejecutivo comercial asignado (`SalesPersonID IS NULL`).
-- El ETL inserta el registro especial `SalesPersonKey = 0` ('Venta Online / Sin Vendedor', 'Canal Digital') en `DimSalesPerson`. Toda orden web se asocia a esta clave, permitiendo filtrar ventas con vendedor vs ventas web sin pérdida de datos.
+- El ETL inserta el registro especial `SalesPersonKey = 0` ('Venta Online / Sin Vendedor', 'Canal Digital') en `DimSalesPerson`. Las órdenes online sin vendedor usan esa clave; una venta asistida sin vendedor válido se rechaza.
 
 ### 2.5 Tratamiento de Desperdicio en Manufactura
 - En `Production.WorkOrder`, las órdenes sin merma poseen `ScrapReasonID IS NULL`.
@@ -47,13 +47,14 @@ El proceso de Extracción, Transformación y Carga (ETL) fue diseñado bajo el p
 
 ## 3. Secuencia de Ejecución del Pipeline
 
-| Paso | Script | Propósito | Tiempo Promedio |
-|:---|:---|:---|:---|
-| **1** | `database/dw/01_create_dw_schema.sql` | Crea la base de datos `AdventureWorksDW`, tablas dimensionales, hechos, índices y claves foráneas. | ~0,15 s |
-| **2** | `database/dw/02_populate_dim_date.sql` | Genera el calendario continuo 2010–2015 con atributos de año, mes, trimestre y fin de semana. | ~0,10 s |
-| **3** | `database/dw/03_etl_dimensions.sql` | Extrae, transforma y carga las 7 dimensiones maestras (`DimTerritory`, `DimSalesPerson`, `DimCustomer`, `DimProduct`, `DimSpecialOffer`, `DimLocation`, `DimScrapReason`). | ~0,35 s |
-| **4** | `database/dw/04_etl_facts.sql` | Resuelve claves foráneas contra las dimensiones y carga las 4 tablas de hechos (`FactSales`, `FactWorkOrder`, `FactWorkOrderRouting`, `FactInventorySnapshot`). | ~3,80 s |
-| **5** | `database/dw/05_audit_and_validation.sql` | Ejecuta validación cruzada de volumetría, cuadratura monetaria y verificación de cero huérfanos. | ~0,60 s |
+| Paso | Script | Propósito |
+| --- | --- | --- |
+| 0 | `database/dw/00_prepare_source.sql` | Abre la transacción, prepara staging, valida, normaliza, registra incidencias y propaga rechazos. |
+| 1 | `database/dw/01_create_dw_schema.sql` | Reconstruye tablas dimensionales, hechos, índices y restricciones dentro de la transacción. |
+| 2 | `database/dw/02_populate_dim_date.sql` | Genera el calendario continuo con rango mínimo 2010–2015 y ampliación según las fechas aceptadas. |
+| 3 | `database/dw/03_etl_dimensions.sql` | Carga las siete dimensiones maestras desde staging aceptado. |
+| 4 | `database/dw/04_etl_facts.sql` | Resuelve claves y carga los cuatro hechos desde staging aceptado. |
+| 5 | `database/dw/05_audit_and_validation.sql` | Verifica cuadratura, contabilidad de rechazos e integridad, y confirma la transacción. |
 
 ---
 
@@ -71,4 +72,4 @@ Set-ExecutionPolicy -Scope Process Bypass
 python3 database/etl/run_etl.py
 ```
 
-Ambos orquestadores leen la contraseña de `sa` desde el archivo `.env`, validan que el contenedor `bigdata-sqlserver` esté activo, ejecutan la secuencia de 5 etapas y emiten un informe de estado con los tiempos de procesamiento.
+Ambos orquestadores leen la contraseña de `sa` desde `.env`, ejecutan las seis etapas en una sola sesión SQL y muestran el resumen de calidad. Los scripts SQL no deben ejecutarse por separado. Un fallo técnico anterior a la publicación revierte la carga y conserva el DW previo; las filas incorrectas se registran y excluyen sin impedir cargar las válidas.

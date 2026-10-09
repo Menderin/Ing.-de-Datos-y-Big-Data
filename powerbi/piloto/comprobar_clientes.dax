@@ -1,0 +1,46 @@
+// Consulta completa para la Vista de consultas DAX, no una medida.
+// Comparar con C1-panorama-clientes.md. Los conteos deben coincidir exactamente.
+EVALUATE
+UNION (
+    ROW ( "Caso", "sin_filtros", "Registrados", [C1 Clientes Registrados],
+          "Compradores", [C1 Clientes Compradores], "SinCompra", [C1 Clientes Sin Compra],
+          "Porcentaje", [C1 Porcentaje Compradores] ),
+    CALCULATETABLE (
+        ROW ( "Caso", "anio_2013", "Registrados", [C1 Clientes Registrados],
+              "Compradores", [C1 Clientes Compradores], "SinCompra", [C1 Clientes Sin Compra],
+              "Porcentaje", [C1 Porcentaje Compradores] ),
+        TREATAS ( {2013}, DimDate[Year] )
+    ),
+    CALCULATETABLE (
+        ROW ( "Caso", "sin_ventas_2010", "Registrados", [C1 Clientes Registrados],
+              "Compradores", [C1 Clientes Compradores], "SinCompra", [C1 Clientes Sin Compra],
+              "Porcentaje", [C1 Porcentaje Compradores] ),
+        TREATAS ( {2010}, DimDate[Year] )
+    ),
+    CALCULATETABLE (
+        ROW ( "Caso", "individuales", "Registrados", [C1 Clientes Registrados],
+              "Compradores", [C1 Clientes Compradores], "SinCompra", [C1 Clientes Sin Compra],
+              "Porcentaje", [C1 Porcentaje Compradores] ),
+        TREATAS ( {"Individual"}, DimCustomer[CustomerType] )
+    ),
+    CALCULATETABLE (
+        ROW ( "Caso", "tiendas", "Registrados", [C1 Clientes Registrados],
+              "Compradores", [C1 Clientes Compradores], "SinCompra", [C1 Clientes Sin Compra],
+              "Porcentaje", [C1 Porcentaje Compradores] ),
+        TREATAS ( {"Store"}, DimCustomer[CustomerType] )
+    ),
+    CALCULATETABLE (
+        ROW ( "Caso", "southwest", "Registrados", [C1 Clientes Registrados],
+              "Compradores", [C1 Clientes Compradores], "SinCompra", [C1 Clientes Sin Compra],
+              "Porcentaje", [C1 Porcentaje Compradores] ),
+        TREATAS ( {"Southwest"}, DimCustomer[TerritoryName] )
+    ),
+    CALCULATETABLE (
+        ROW ( "Caso", "2013_tiendas_southwest", "Registrados", [C1 Clientes Registrados],
+              "Compradores", [C1 Clientes Compradores], "SinCompra", [C1 Clientes Sin Compra],
+              "Porcentaje", [C1 Porcentaje Compradores] ),
+        TREATAS ( {2013}, DimDate[Year] ),
+        TREATAS ( {"Store"}, DimCustomer[CustomerType] ),
+        TREATAS ( {"Southwest"}, DimCustomer[TerritoryName] )
+    )
+)

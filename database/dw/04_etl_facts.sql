@@ -5,7 +5,7 @@
 -- Proyecto: Ingeniería de Datos y Big Data - Entrega 2
 -- ==============================================================================
 
-USE [AdventureWorksDW];
+USE [$(TargetDatabase)];
 GO
 
 SET NOCOUNT ON;
@@ -56,13 +56,13 @@ SELECT
     sod.OrderQty,
     sod.UnitPrice,
     sod.UnitPriceDiscount,
-    CAST(sod.OrderQty * sod.UnitPrice * sod.UnitPriceDiscount AS MONEY) AS DiscountAmount,
+    CAST(CAST(sod.OrderQty AS decimal(10,0)) * sod.UnitPrice * sod.UnitPriceDiscount AS MONEY) AS DiscountAmount,
     sod.LineTotal,
     dp.StandardCost AS ProductStandardCost,
-    CAST(sod.OrderQty * dp.StandardCost AS MONEY) AS TotalProductCost,
-    CAST(sod.LineTotal - (sod.OrderQty * dp.StandardCost) AS NUMERIC(38,6)) AS GrossMargin
-FROM AdventureWorks2022.Sales.SalesOrderDetail sod
-INNER JOIN AdventureWorks2022.Sales.SalesOrderHeader soh ON sod.SalesOrderID = soh.SalesOrderID
+    CAST(CAST(sod.OrderQty AS decimal(10,0)) * dp.StandardCost AS MONEY) AS TotalProductCost,
+    CAST(sod.LineTotal - (CAST(sod.OrderQty AS decimal(10,0)) * dp.StandardCost) AS NUMERIC(38,6)) AS GrossMargin
+FROM #src_Sales_SalesOrderDetail sod
+INNER JOIN #src_Sales_SalesOrderHeader soh ON sod.SalesOrderID = soh.SalesOrderID
 INNER JOIN dbo.DimCustomer dc ON soh.CustomerID = dc.CustomerID
 INNER JOIN dbo.DimProduct dp ON sod.ProductID = dp.ProductID
 INNER JOIN dbo.DimTerritory dt ON soh.TerritoryID = dt.TerritoryID
@@ -98,8 +98,8 @@ SELECT
     wo.OrderQty,
     wo.StockedQty,
     wo.ScrappedQty,
-    CAST(wo.ScrappedQty * dp.StandardCost AS MONEY) AS ScrapCost
-FROM AdventureWorks2022.Production.WorkOrder wo
+    CAST(CAST(wo.ScrappedQty AS decimal(10,0)) * dp.StandardCost AS MONEY) AS ScrapCost
+FROM #src_Production_WorkOrder wo
 INNER JOIN dbo.DimProduct dp ON wo.ProductID = dp.ProductID;
 
 PRINT 'FactWorkOrder cargada: ' + CAST(@@ROWCOUNT AS VARCHAR(10)) + ' registros.';
@@ -137,7 +137,7 @@ SELECT
     wor.PlannedCost,
     wor.ActualCost,
     CAST(wor.ActualCost - wor.PlannedCost AS MONEY) AS CostVariance
-FROM AdventureWorks2022.Production.WorkOrderRouting wor
+FROM #src_Production_WorkOrderRouting wor
 INNER JOIN dbo.DimProduct dp ON wor.ProductID = dp.ProductID
 INNER JOIN dbo.DimLocation dl ON wor.LocationID = dl.LocationID;
 
@@ -163,8 +163,8 @@ SELECT
     pi.Shelf,
     pi.Bin,
     pi.Quantity,
-    CAST(pi.Quantity * dp.StandardCost AS MONEY) AS InventoryValue
-FROM AdventureWorks2022.Production.ProductInventory pi
+    CAST(CAST(pi.Quantity AS decimal(10,0)) * dp.StandardCost AS MONEY) AS InventoryValue
+FROM #src_Production_ProductInventory pi
 INNER JOIN dbo.DimProduct dp ON pi.ProductID = dp.ProductID
 INNER JOIN dbo.DimLocation dl ON pi.LocationID = dl.LocationID;
 

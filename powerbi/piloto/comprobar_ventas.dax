@@ -1,0 +1,47 @@
+// Ejecutar en la vista de consultas DAX después de reabrir y actualizar el PBIP.
+// Comparar con database/reports/07_validar_ventas_finales.sql.
+EVALUATE
+ROW (
+    "Venta neta", [Ventas Netas], "Ordenes", [Ordenes],
+    "Productos", [V2 Productos Vendidos], "Unidades", [Unidades Vendidas],
+    "Vendedores", [V4 Vendedores Activos], "Venta con vendedor", [V4 Ventas],
+    "Ordenes con vendedor", [V4 Ordenes],
+    "Venta bruta", [V5 Venta Bruta], "Descuento", [V5 Descuento],
+    "Ajuste", [V5 Ajuste Redondeo], "Venta con descuento", [V5 Venta Con Descuento],
+    "Error puente", [V5 Venta Bruta] - [V5 Descuento] + [V5 Ajuste Redondeo] - [Ventas Netas]
+)
+
+EVALUATE
+TOPN ( 10,
+    SUMMARIZECOLUMNS ( DimProduct[ProductKey], DimProduct[Producto],
+        "Venta", [V2 Venta Top 10], "Posicion", [V2 Posicion Producto] ),
+    [Venta], DESC, DimProduct[ProductKey], ASC
+)
+ORDER BY [Venta] DESC
+
+EVALUATE
+SUMMARIZECOLUMNS ( PuenteVenta[Paso], PuenteVenta[Concepto], "Importe", [V5 Puente] )
+ORDER BY PuenteVenta[Paso]
+
+EVALUATE
+SUMMARIZECOLUMNS ( DimSalesPerson[Vendedor],
+    "Venta", [V4 Ventas], "Ordenes", [V4 Ordenes], "Ticket", [V4 Ticket] )
+ORDER BY [Venta] DESC
+
+// 2015 no tiene ventas en la carga actual: totales monetarios BLANK, estado claro.
+EVALUATE
+CALCULATETABLE (
+    ROW ( "Ordenes", [Ordenes], "Venta", [Ventas Netas],
+        "Top productos", [V2 Venta Top 10], "Venta vendedores", [V4 Ventas],
+        "Puente", [V5 Puente], "Estado", [V5 Estado] ),
+    DimDate[Year] = 2015
+)
+
+// Selección restrictiva: verificar que el top cambia, sin conservar ranking global.
+EVALUATE
+CALCULATETABLE (
+    FILTER ( SUMMARIZECOLUMNS ( DimProduct[ProductKey], DimProduct[Producto],
+        "Venta", [V2 Venta Top 10] ), NOT ISBLANK ( [Venta] ) ),
+    DimDate[Year] = 2012, DimDate[Month] = 3, DimProduct[CategoryName] = "Bikes"
+)
+ORDER BY [Venta] DESC

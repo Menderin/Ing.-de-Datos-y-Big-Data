@@ -1,0 +1,42 @@
+-- Consultas de solo lectura para ejecutar tras abrir y actualizar el PBIP.
+EVALUATE
+ROW (
+ "P1 Ordenes", [P1 Ordenes], "P1 Ordenadas", [P1 Unidades Ordenadas],
+ "P1 Almacenadas", [P1 Unidades Almacenadas], "P1 Descartadas", [P1 Unidades Descartadas],
+ "P2 Tasa", [P2 Tasa Descarte], "P2 Costo", [P2 Costo Estimado],
+ "P2 Ordenes", [P2 Ordenes Con Descarte], "P2 Motivos", [P2 Motivos Utilizados],
+ "P3 Stock", [P3 Stock], "P3 Valor", [P3 Valor Estimado],
+ "P3 Productos", [P3 Productos Con Registro], "P3 Bajo Reorden", [P3 Bajo Reorden],
+ "P4 Operaciones", [P4 Operaciones], "P4 Horas", [P4 Horas],
+ "P4 Costo", [P4 Costo Real], "P4 Variacion", [P4 Variacion Costo],
+ "P5 Productos", [P5 Productos], "P5 Fabricados", [P5 Fabricados],
+ "P5 No Fabricados", [P5 No Fabricados], "P5 Terminados", [P5 Terminados]
+)
+
+EVALUATE
+SUMMARIZECOLUMNS ( DimDate[MonthYear],
+ "Ordenes", [P1 Ordenes], "Ordenadas", [P1 Unidades Ordenadas],
+ "Almacenadas", [P1 Unidades Almacenadas], "Descartadas", [P1 Unidades Descartadas] )
+ORDER BY DimDate[MonthYear]
+
+EVALUATE
+SUMMARIZECOLUMNS ( DimLocation[LocationName],
+ "Stock Local", [P3 Stock], "Productos Locales", [P3 Productos Con Registro],
+ "Productos Bajo Reorden Global", [P3 Bajo Reorden],
+ "Operaciones", [P4 Operaciones], "Horas", [P4 Horas] )
+
+EVALUATE
+CALCULATETABLE ( ROW ( "Ordenes 2015", [P1 Ordenes],
+ "Tasa 2015", [P2 Tasa Descarte], "Catalogo Sin Fecha", [P5 Productos],
+ "Stock Sin Fecha", [P3 Stock] ), DimDate[Year] = 2015 )
+
+EVALUATE
+SUMMARIZECOLUMNS ( DimScrapReason[ScrapReasonName],
+ "Descartadas", [P2 Unidades Por Motivo],
+ "Acumulado", [P2 Descarte Acumulado Porcentaje] )
+ORDER BY [Descartadas] DESC
+
+EVALUATE
+FILTER ( SUMMARIZECOLUMNS ( DimProduct[Producto],
+ "Stock Global", [P3 Stock Total Producto],
+ "Brecha de Reorden", [P3 Brecha Reorden] ), [Brecha de Reorden] < 0 )

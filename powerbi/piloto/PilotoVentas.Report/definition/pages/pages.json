@@ -1,0 +1,21 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/pagesMetadata/1.0.0/schema.json",
+  "pageOrder": [
+    "C1_PanoramaClientes",
+    "C2_ValorClientes",
+    "C3_Recompra",
+    "C4_Geografia",
+    "C5_Canales",
+    "P1_PanoramaProduccion",
+    "P2_Calidad",
+    "P3_Inventario",
+    "P4_CentrosTrabajo",
+    "P5_Catalogo",
+    "V1_ResumenVentas",
+    "V2_Productos",
+    "V3_Territorios",
+    "V4_Vendedores",
+    "V5_Descuentos"
+  ],
+  "activePageName": "C1_PanoramaClientes"
+}

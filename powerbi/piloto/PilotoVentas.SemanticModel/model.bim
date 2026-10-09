@@ -1,0 +1,1825 @@
+{
+  "name": "PilotoVentas",
+  "compatibilityLevel": 1600,
+  "model": {
+    "culture": "es-CL",
+    "defaultPowerBIDataSourceVersion": "powerBI_V3",
+    "tables": [
+      {
+        "name": "DimDate",
+        "columns": [
+          {
+            "name": "DateKey",
+            "dataType": "int64",
+            "sourceColumn": "DateKey",
+            "summarizeBy": "none",
+            "isHidden": true,
+            "isKey": true
+          },
+          {
+            "name": "FullDate",
+            "dataType": "dateTime",
+            "sourceColumn": "FullDate",
+            "summarizeBy": "none",
+            "formatString": "dd/MM/yyyy"
+          },
+          {
+            "name": "Year",
+            "dataType": "int64",
+            "sourceColumn": "Year",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "QuarterName",
+            "dataType": "string",
+            "sourceColumn": "QuarterName",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "Month",
+            "dataType": "int64",
+            "sourceColumn": "Month",
+            "summarizeBy": "none",
+            "isHidden": true
+          },
+          {
+            "name": "MonthName",
+            "dataType": "string",
+            "sourceColumn": "MonthName",
+            "summarizeBy": "none",
+            "sortByColumn": "Month"
+          },
+          {
+            "name": "MonthYear",
+            "dataType": "string",
+            "sourceColumn": "MonthYear",
+            "summarizeBy": "none"
+          }
+        ],
+        "partitions": [
+          {
+            "name": "DimDate",
+            "mode": "import",
+            "source": {
+              "type": "m",
+              "expression": [
+                "let",
+                "    Origen = Sql.Database(\"localhost,1433\", \"AdventureWorksDW\"),",
+                "    Tabla = Origen{[Schema = \"dbo\", Item = \"DimDate\"]}[Data],",
+                "    Seleccion = Table.SelectColumns(Tabla, {\"DateKey\", \"FullDate\", \"Year\", \"QuarterName\", \"Month\", \"MonthName\", \"MonthYear\"}),",
+                "    Fechas = Table.SelectRows(Seleccion, each [DateKey] <> -1)",
+                "in",
+                "    Fechas"
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "DimTerritory",
+        "columns": [
+          {
+            "name": "TerritoryKey",
+            "dataType": "int64",
+            "sourceColumn": "TerritoryKey",
+            "summarizeBy": "none",
+            "isHidden": true,
+            "isKey": true
+          },
+          {
+            "name": "TerritoryName",
+            "dataType": "string",
+            "sourceColumn": "TerritoryName",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "CountryRegionCode",
+            "dataType": "string",
+            "sourceColumn": "CountryRegionCode",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "Group",
+            "dataType": "string",
+            "sourceColumn": "Group",
+            "summarizeBy": "none"
+          }
+        ],
+        "partitions": [
+          {
+            "name": "DimTerritory",
+            "mode": "import",
+            "source": {
+              "type": "m",
+              "expression": [
+                "let",
+                "    Origen = Sql.Database(\"localhost,1433\", \"AdventureWorksDW\"),",
+                "    Tabla = Origen{[Schema = \"dbo\", Item = \"DimTerritory\"]}[Data],",
+                "    Seleccion = Table.SelectColumns(Tabla, {\"TerritoryKey\", \"TerritoryName\", \"CountryRegionCode\", \"Group\"})",
+                "in",
+                "    Seleccion"
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "FactSales",
+        "columns": [
+          {
+            "name": "ProductKey",
+            "dataType": "int64",
+            "sourceColumn": "ProductKey",
+            "summarizeBy": "none",
+            "isHidden": true
+          },
+          {
+            "name": "SalesOrderID",
+            "dataType": "int64",
+            "sourceColumn": "SalesOrderID",
+            "summarizeBy": "none",
+            "isHidden": true
+          },
+          {
+            "name": "OrderDateKey",
+            "dataType": "int64",
+            "sourceColumn": "OrderDateKey",
+            "summarizeBy": "none",
+            "isHidden": true
+          },
+          {
+            "name": "TerritoryKey",
+            "dataType": "int64",
+            "sourceColumn": "TerritoryKey",
+            "summarizeBy": "none",
+            "isHidden": true
+          },
+          {
+            "name": "OnlineOrderFlag",
+            "dataType": "boolean",
+            "sourceColumn": "OnlineOrderFlag",
+            "summarizeBy": "none",
+            "isHidden": true
+          },
+          {
+            "name": "LineTotal",
+            "dataType": "double",
+            "sourceColumn": "LineTotal",
+            "summarizeBy": "none",
+            "isHidden": true
+          },
+          {
+            "name": "TotalProductCost",
+            "dataType": "decimal",
+            "sourceColumn": "TotalProductCost",
+            "summarizeBy": "none",
+            "isHidden": true
+          },
+          {
+            "name": "GrossMargin",
+            "dataType": "double",
+            "sourceColumn": "GrossMargin",
+            "summarizeBy": "none",
+            "isHidden": true
+          },
+          {
+            "name": "OrderQty",
+            "dataType": "int64",
+            "sourceColumn": "OrderQty",
+            "summarizeBy": "none",
+            "isHidden": true
+          },
+          {
+            "name": "Canal",
+            "dataType": "string",
+            "type": "calculated",
+            "expression": "IF ( FactSales[OnlineOrderFlag], \"Online\", \"Asistido\" )",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "CustomerKey",
+            "dataType": "int64",
+            "sourceColumn": "CustomerKey",
+            "summarizeBy": "none",
+            "isHidden": true
+          },
+          {
+            "name": "SalesPersonKey",
+            "dataType": "int64",
+            "sourceColumn": "SalesPersonKey",
+            "summarizeBy": "none",
+            "isHidden": true
+          },
+          {
+            "name": "SpecialOfferKey",
+            "dataType": "int64",
+            "sourceColumn": "SpecialOfferKey",
+            "summarizeBy": "none",
+            "isHidden": true
+          },
+          {
+            "name": "UnitPrice",
+            "dataType": "decimal",
+            "sourceColumn": "UnitPrice",
+            "summarizeBy": "none",
+            "isHidden": true
+          },
+          {
+            "name": "UnitPriceDiscount",
+            "dataType": "decimal",
+            "sourceColumn": "UnitPriceDiscount",
+            "summarizeBy": "none",
+            "isHidden": true
+          },
+          {
+            "name": "DiscountAmount",
+            "dataType": "decimal",
+            "sourceColumn": "DiscountAmount",
+            "summarizeBy": "none",
+            "isHidden": true
+          },
+          {
+            "type": "calculated",
+            "name": "Descuento Aplicado",
+            "dataType": "string",
+            "summarizeBy": "none",
+            "expression": "IF ( FactSales[UnitPriceDiscount] > 0, \"Con descuento\", \"Sin descuento\" )"
+          }
+        ],
+        "partitions": [
+          {
+            "name": "FactSales",
+            "mode": "import",
+            "source": {
+              "type": "m",
+              "expression": [
+                "let",
+                "    Origen = Sql.Database(\"localhost,1433\", \"AdventureWorksDW\"),",
+                "    Tabla = Origen{[Schema = \"dbo\", Item = \"FactSales\"]}[Data],",
+                "    Seleccion = Table.SelectColumns(Tabla, {\"ProductKey\", \"SalesOrderID\", \"OrderDateKey\", \"TerritoryKey\", \"OnlineOrderFlag\", \"LineTotal\", \"TotalProductCost\", \"GrossMargin\", \"OrderQty\", \"CustomerKey\", \"SalesPersonKey\", \"SpecialOfferKey\", \"UnitPrice\", \"UnitPriceDiscount\", \"DiscountAmount\"})",
+                "in",
+                "    Seleccion"
+              ]
+            }
+          }
+        ],
+        "measures": [
+          {
+            "name": "Estado de Seleccion",
+            "expression": "IF ( [Ordenes] = 0, \"Sin ventas para la selección actual. Limpia o cambia los filtros.\", \"Mostrando ventas de la selección actual.\" )",
+            "displayFolder": "V1 - Resumen de ventas"
+          },
+          {
+            "name": "Ventas Netas",
+            "expression": "SUM ( FactSales[LineTotal] )",
+            "formatString": "#,0.00",
+            "displayFolder": "V1 - Resumen de ventas"
+          },
+          {
+            "name": "Costo de Ventas",
+            "expression": "SUM ( FactSales[TotalProductCost] )",
+            "formatString": "#,0.00",
+            "displayFolder": "V1 - Resumen de ventas"
+          },
+          {
+            "name": "Margen Bruto",
+            "expression": "SUM ( FactSales[GrossMargin] )",
+            "formatString": "#,0.00",
+            "displayFolder": "V1 - Resumen de ventas"
+          },
+          {
+            "name": "Margen Bruto %",
+            "expression": "DIVIDE ( [Margen Bruto], [Ventas Netas] )",
+            "formatString": "0.00%",
+            "displayFolder": "V1 - Resumen de ventas"
+          },
+          {
+            "name": "Ordenes",
+            "expression": "COALESCE ( DISTINCTCOUNT ( FactSales[SalesOrderID] ), 0 )",
+            "formatString": "#,0",
+            "displayFolder": "V1 - Resumen de ventas"
+          },
+          {
+            "name": "Ticket Promedio",
+            "expression": "DIVIDE ( [Ventas Netas], [Ordenes] )",
+            "formatString": "#,0.00",
+            "displayFolder": "V1 - Resumen de ventas"
+          },
+          {
+            "name": "Unidades Vendidas",
+            "expression": "SUM ( FactSales[OrderQty] )",
+            "formatString": "#,0",
+            "displayFolder": "V1 - Resumen de ventas"
+          },
+          {
+            "name": "C1 Clientes Registrados",
+            "expression": "COALESCE ( COUNTROWS ( DimCustomer ), 0 )",
+            "formatString": "#,0",
+            "displayFolder": "C1 - Panorama de clientes"
+          },
+          {
+            "name": "C1 Clientes Compradores",
+            "expression": "COALESCE ( DISTINCTCOUNT ( FactSales[CustomerKey] ), 0 )",
+            "formatString": "#,0",
+            "displayFolder": "C1 - Panorama de clientes"
+          },
+          {
+            "name": "C1 Clientes Sin Compra",
+            "expression": "[C1 Clientes Registrados] - [C1 Clientes Compradores]",
+            "formatString": "#,0",
+            "displayFolder": "C1 - Panorama de clientes"
+          },
+          {
+            "name": "C1 Porcentaje Compradores",
+            "expression": "DIVIDE ( [C1 Clientes Compradores], [C1 Clientes Registrados] )",
+            "formatString": "0.00%",
+            "displayFolder": "C1 - Panorama de clientes"
+          },
+          {
+            "name": "C1 Primera Compra",
+            "expression": "VAR PrimeraClave = MIN ( FactSales[OrderDateKey] ) RETURN IF ( NOT ISBLANK ( PrimeraClave ), LOOKUPVALUE ( DimDate[FullDate], DimDate[DateKey], PrimeraClave ) )",
+            "formatString": "dd/MM/yyyy",
+            "displayFolder": "C1 - Panorama de clientes"
+          },
+          {
+            "name": "C1 Estado",
+            "expression": "IF ( [C1 Clientes Registrados] = 0, \"No hay clientes para esta selección.\", IF ( [C1 Clientes Compradores] = 0, \"Sin compras en el periodo seleccionado. La cartera registrada se conserva.\", \"La cartera no cambia por fecha; compradores y órdenes corresponden al periodo seleccionado.\" ) )",
+            "displayFolder": "C1 - Panorama de clientes"
+          },
+          {
+            "name": "C2 Venta por Comprador",
+            "expression": "DIVIDE ( [Ventas Netas], [C1 Clientes Compradores] )",
+            "formatString": "#,0.00",
+            "displayFolder": "C2 - Valor de clientes"
+          },
+          {
+            "name": "C2 Venta Top 10 Total",
+            "expression": "VAR T = ADDCOLUMNS ( ALLSELECTED ( DimCustomer ), \"@V\", [Ventas Netas] ) RETURN SUMX ( TOPN ( 10, FILTER ( T, NOT ISBLANK ( [@V] ) ), [@V], DESC, DimCustomer[CustomerID], ASC ), [@V] )",
+            "formatString": "#,0.00",
+            "displayFolder": "C2 - Valor de clientes"
+          },
+          {
+            "name": "C2 Participacion Top 10",
+            "expression": "VAR T = ADDCOLUMNS ( ALLSELECTED ( DimCustomer ), \"@V\", [Ventas Netas] ) RETURN DIVIDE ( [C2 Venta Top 10 Total], SUMX ( T, [@V] ) )",
+            "formatString": "0.00%",
+            "displayFolder": "C2 - Valor de clientes"
+          },
+          {
+            "name": "C2 Posicion Cliente",
+            "expression": "VAR V = [Ventas Netas] VAR ClienteActual = SELECTEDVALUE ( DimCustomer[CustomerID] ) VAR T = ADDCOLUMNS ( ALLSELECTED ( DimCustomer ), \"@V\", [Ventas Netas] ) RETURN IF ( NOT ISBLANK ( V ) && NOT ISBLANK ( ClienteActual ), 1 + COUNTROWS ( FILTER ( T, NOT ISBLANK ( [@V] ) && ( [@V] > V || ( [@V] = V && DimCustomer[CustomerID] < ClienteActual ) ) ) ) )",
+            "formatString": "#,0",
+            "displayFolder": "C2 - Valor de clientes"
+          },
+          {
+            "name": "C2 Venta Top 10",
+            "expression": "IF ( NOT ISBLANK ( [C2 Posicion Cliente] ) && [C2 Posicion Cliente] <= 10, [Ventas Netas] )",
+            "formatString": "#,0.00",
+            "displayFolder": "C2 - Valor de clientes"
+          },
+          {
+            "name": "C2 Venta Acumulada Porcentaje",
+            "expression": "VAR V = [Ventas Netas] VAR T = ADDCOLUMNS ( ALLSELECTED ( DimCustomer ), \"@V\", [Ventas Netas] ) RETURN IF ( NOT ISBLANK ( V ), DIVIDE ( SUMX ( FILTER ( T, NOT ISBLANK ( [@V] ) && [@V] >= V ), [@V] ), SUMX ( T, [@V] ) ) )",
+            "formatString": "0.00%",
+            "displayFolder": "C2 - Valor de clientes"
+          },
+          {
+            "name": "C2 Estado",
+            "expression": "IF ( [Ordenes] = 0, \"Sin compras en la selección actual.\", \"Ranking y concentración sobre compradores seleccionados. El top 10 incluye personas y tiendas.\" )",
+            "displayFolder": "C2 - Valor de clientes"
+          },
+          {
+            "name": "C3 Compra Unica",
+            "expression": "COALESCE ( COUNTROWS ( FILTER ( VALUES ( DimCustomer[CustomerKey] ), [Ordenes] = 1 ) ), 0 )",
+            "formatString": "#,0",
+            "displayFolder": "C3 - Recompra"
+          },
+          {
+            "name": "C3 Recurrentes",
+            "expression": "COALESCE ( COUNTROWS ( FILTER ( VALUES ( DimCustomer[CustomerKey] ), [Ordenes] >= 2 && [Ordenes] <= 3 ) ), 0 )",
+            "formatString": "#,0",
+            "displayFolder": "C3 - Recompra"
+          },
+          {
+            "name": "C3 Frecuentes",
+            "expression": "COALESCE ( COUNTROWS ( FILTER ( VALUES ( DimCustomer[CustomerKey] ), [Ordenes] > 3 ) ), 0 )",
+            "formatString": "#,0",
+            "displayFolder": "C3 - Recompra"
+          },
+          {
+            "name": "C3 Fecha de Referencia",
+            "expression": "VAR K = CALCULATE ( MAX ( FactSales[OrderDateKey] ), REMOVEFILTERS () ) RETURN IF ( NOT ISBLANK ( K ), DATE ( INT ( K / 10000 ), MOD ( INT ( K / 100 ), 100 ), MOD ( K, 100 ) ) )",
+            "formatString": "dd/MM/yyyy",
+            "displayFolder": "C3 - Recompra"
+          },
+          {
+            "name": "C3 Ultima Compra",
+            "expression": "VAR K = MAX ( FactSales[OrderDateKey] ) RETURN IF ( NOT ISBLANK ( K ), LOOKUPVALUE ( DimDate[FullDate], DimDate[DateKey], K ) )",
+            "formatString": "dd/MM/yyyy",
+            "displayFolder": "C3 - Recompra"
+          },
+          {
+            "name": "C3 Recencia Dias",
+            "expression": "IF ( NOT ISBLANK ( [C3 Ultima Compra] ), DATEDIFF ( [C3 Ultima Compra], [C3 Fecha de Referencia], DAY ) )",
+            "formatString": "#,0",
+            "displayFolder": "C3 - Recompra"
+          },
+          {
+            "name": "C3 Recencia Media",
+            "expression": "AVERAGEX ( VALUES ( DimCustomer[CustomerKey] ), [C3 Recencia Dias] )",
+            "formatString": "#,0.0",
+            "displayFolder": "C3 - Recompra"
+          },
+          {
+            "name": "C3 Segmento",
+            "expression": "SWITCH ( TRUE (), [Ordenes] = 0, BLANK (), [Ordenes] = 1, \"Compra única\", [Ordenes] <= 3, \"Recurrente\", \"Frecuente\" )",
+            "displayFolder": "C3 - Recompra"
+          },
+          {
+            "name": "C3 Estado",
+            "expression": "IF ( [Ordenes] = 0, \"Sin compradores para esta selección.\", \"Referencia de recencia: \" & FORMAT ( [C3 Fecha de Referencia], \"dd/MM/yyyy\" ) & \". Frecuencia y última compra corresponden al periodo; no se usa la fecha de hoy.\" )",
+            "displayFolder": "C3 - Recompra"
+          },
+          {
+            "name": "C4 Paises",
+            "expression": "COUNTROWS ( FILTER ( VALUES ( DimCustomer[CountryRegionName] ), NOT ISBLANK ( DimCustomer[CountryRegionName] ) && NOT ( DimCustomer[CountryRegionName] IN { \"\", \"No Informado\" } ) ) )",
+            "formatString": "#,0",
+            "displayFolder": "C4 - Geografia"
+          },
+          {
+            "name": "C4 Provincias",
+            "expression": "COUNTROWS ( SUMMARIZE ( FILTER ( DimCustomer, NOT ( DimCustomer[StateProvinceName] IN { \"\", \"No Informado\" } ) ), DimCustomer[CountryRegionName], DimCustomer[StateProvinceName] ) )",
+            "formatString": "#,0",
+            "displayFolder": "C4 - Geografia"
+          },
+          {
+            "name": "C4 Ciudades",
+            "expression": "COUNTROWS ( SUMMARIZE ( FILTER ( DimCustomer, NOT ( DimCustomer[City] IN { \"\", \"No Informado\" } ) ), DimCustomer[CountryRegionName], DimCustomer[StateProvinceName], DimCustomer[City] ) )",
+            "formatString": "#,0",
+            "displayFolder": "C4 - Geografia"
+          },
+          {
+            "name": "C4 Sin Pais",
+            "expression": "COALESCE ( COUNTROWS ( FILTER ( DimCustomer, ISBLANK ( DimCustomer[CountryRegionName] ) || DimCustomer[CountryRegionName] IN { \"\", \"No Informado\" } ) ), 0 )",
+            "formatString": "#,0",
+            "displayFolder": "C4 - Geografia"
+          },
+          {
+            "name": "C4 Participacion Cartera",
+            "expression": "VAR N = CALCULATE ( [C1 Clientes Registrados], ALLSELECTED ( DimCustomer ) ) RETURN DIVIDE ( [C1 Clientes Registrados], N )",
+            "formatString": "0.00%",
+            "displayFolder": "C4 - Geografia"
+          },
+          {
+            "name": "C4 Estado",
+            "expression": "\"Ubicación del cliente, no territorio de la venta. Cartera actual sin filtro temporal ni indicadores de facturación.\"",
+            "displayFolder": "C4 - Geografia"
+          },
+          {
+            "name": "C5 Ordenes Online",
+            "expression": "CALCULATE ( [Ordenes], FactSales[OnlineOrderFlag] = TRUE () )",
+            "formatString": "#,0",
+            "displayFolder": "C5 - Canales"
+          },
+          {
+            "name": "C5 Ticket Online",
+            "expression": "CALCULATE ( [Ticket Promedio], FactSales[OnlineOrderFlag] = TRUE () )",
+            "formatString": "#,0.00",
+            "displayFolder": "C5 - Canales"
+          },
+          {
+            "name": "C5 Ventas Online",
+            "expression": "CALCULATE ( [Ventas Netas], FactSales[OnlineOrderFlag] = TRUE () )",
+            "formatString": "#,0.00",
+            "displayFolder": "C5 - Canales"
+          },
+          {
+            "name": "C5 Ordenes Asistidas",
+            "expression": "CALCULATE ( [Ordenes], FactSales[OnlineOrderFlag] = FALSE () )",
+            "formatString": "#,0",
+            "displayFolder": "C5 - Canales"
+          },
+          {
+            "name": "C5 Ticket Asistidas",
+            "expression": "CALCULATE ( [Ticket Promedio], FactSales[OnlineOrderFlag] = FALSE () )",
+            "formatString": "#,0.00",
+            "displayFolder": "C5 - Canales"
+          },
+          {
+            "name": "C5 Ventas Asistidas",
+            "expression": "CALCULATE ( [Ventas Netas], FactSales[OnlineOrderFlag] = FALSE () )",
+            "formatString": "#,0.00",
+            "displayFolder": "C5 - Canales"
+          },
+          {
+            "name": "C5 Participacion Ordenes",
+            "expression": "DIVIDE ( [Ordenes], CALCULATE ( [Ordenes], REMOVEFILTERS ( FactSales[Canal] ), REMOVEFILTERS ( FactSales[OnlineOrderFlag] ) ) )",
+            "formatString": "0.00%",
+            "displayFolder": "C5 - Canales"
+          },
+          {
+            "name": "C5 Estado",
+            "expression": "IF ( [Ordenes] = 0, \"Sin compras para esta selección.\", \"Online y asistido son canales, no tipos de cliente. Un comprador puede utilizar ambos canales.\" )",
+            "displayFolder": "C5 - Canales"
+          },
+          {
+            "name": "V2 Productos Vendidos",
+            "expression": "DISTINCTCOUNT ( FactSales[ProductKey] )",
+            "formatString": "#,0",
+            "displayFolder": "Ventas/V2"
+          },
+          {
+            "name": "V2 Precio Neto Unidad",
+            "expression": "DIVIDE ( [Ventas Netas], [Unidades Vendidas] )",
+            "formatString": "#,0.00",
+            "displayFolder": "Ventas/V2"
+          },
+          {
+            "name": "V2 Posicion Producto",
+            "expression": "VAR VentaActual = [Ventas Netas] VAR ProductoActual = SELECTEDVALUE ( DimProduct[ProductKey] ) VAR Universo = ADDCOLUMNS ( ALLSELECTED ( DimProduct ), \"@Venta\", [Ventas Netas] ) RETURN IF ( NOT ISBLANK ( VentaActual ) && NOT ISBLANK ( ProductoActual ), 1 + COUNTROWS ( FILTER ( Universo, NOT ISBLANK ( [@Venta] ) && ( [@Venta] > VentaActual || ( [@Venta] = VentaActual && DimProduct[ProductKey] < ProductoActual ) ) ) ) )",
+            "formatString": "#,0",
+            "displayFolder": "Ventas/V2"
+          },
+          {
+            "name": "V2 Venta Top 10",
+            "expression": "IF ( NOT ISBLANK ( [V2 Posicion Producto] ) && [V2 Posicion Producto] <= 10, [Ventas Netas] )",
+            "formatString": "#,0.00",
+            "displayFolder": "Ventas/V2"
+          },
+          {
+            "name": "V3 Territorios Con Venta",
+            "expression": "DISTINCTCOUNT ( FactSales[TerritoryKey] )",
+            "formatString": "#,0",
+            "displayFolder": "Ventas/V3"
+          },
+          {
+            "name": "V3 Compradores",
+            "expression": "DISTINCTCOUNT ( FactSales[CustomerKey] )",
+            "formatString": "#,0",
+            "displayFolder": "Ventas/V3"
+          },
+          {
+            "name": "V3 Participacion Grupo",
+            "expression": "DIVIDE ( [Ventas Netas], CALCULATE ( [Ventas Netas], ALLSELECTED ( DimTerritory[Group] ) ) )",
+            "formatString": "0.00%",
+            "displayFolder": "Ventas/V3"
+          },
+          {
+            "name": "V4 Ventas",
+            "expression": "CALCULATE ( [Ventas Netas], KEEPFILTERS ( DimSalesPerson[SalesPersonKey] <> 0 ) )",
+            "formatString": "#,0.00",
+            "displayFolder": "Ventas/V4"
+          },
+          {
+            "name": "V4 Ordenes",
+            "expression": "CALCULATE ( DISTINCTCOUNT ( FactSales[SalesOrderID] ), KEEPFILTERS ( DimSalesPerson[SalesPersonKey] <> 0 ) )",
+            "formatString": "#,0",
+            "displayFolder": "Ventas/V4"
+          },
+          {
+            "name": "V4 Vendedores Activos",
+            "expression": "CALCULATE ( DISTINCTCOUNT ( FactSales[SalesPersonKey] ), KEEPFILTERS ( DimSalesPerson[SalesPersonKey] <> 0 ) )",
+            "formatString": "#,0",
+            "displayFolder": "Ventas/V4"
+          },
+          {
+            "name": "V4 Margen",
+            "expression": "CALCULATE ( [Margen Bruto], KEEPFILTERS ( DimSalesPerson[SalesPersonKey] <> 0 ) )",
+            "formatString": "#,0.00",
+            "displayFolder": "Ventas/V4"
+          },
+          {
+            "name": "V4 Ticket",
+            "expression": "DIVIDE ( [V4 Ventas], [V4 Ordenes] )",
+            "formatString": "#,0.00",
+            "displayFolder": "Ventas/V4"
+          },
+          {
+            "name": "V4 Margen Porcentaje",
+            "expression": "DIVIDE ( [V4 Margen], [V4 Ventas] )",
+            "formatString": "0.00%",
+            "displayFolder": "Ventas/V4"
+          },
+          {
+            "name": "V4 Compradores",
+            "expression": "CALCULATE ( DISTINCTCOUNT ( FactSales[CustomerKey] ), KEEPFILTERS ( DimSalesPerson[SalesPersonKey] <> 0 ) )",
+            "formatString": "#,0",
+            "displayFolder": "Ventas/V4"
+          },
+          {
+            "name": "V5 Venta Bruta",
+            "expression": "SUMX ( FactSales, FactSales[OrderQty] * FactSales[UnitPrice] )",
+            "formatString": "#,0.00",
+            "displayFolder": "Ventas/V5"
+          },
+          {
+            "name": "V5 Descuento",
+            "expression": "SUM ( FactSales[DiscountAmount] )",
+            "formatString": "#,0.00",
+            "displayFolder": "Ventas/V5"
+          },
+          {
+            "name": "V5 Tasa Descuento",
+            "expression": "DIVIDE ( [V5 Descuento], [V5 Venta Bruta] )",
+            "formatString": "0.00%",
+            "displayFolder": "Ventas/V5"
+          },
+          {
+            "name": "V5 Venta Con Descuento",
+            "expression": "CALCULATE ( [Ventas Netas], KEEPFILTERS ( FactSales[UnitPriceDiscount] > 0 ) )",
+            "formatString": "#,0.00",
+            "displayFolder": "Ventas/V5"
+          },
+          {
+            "name": "V5 Ajuste Redondeo",
+            "expression": "[Ventas Netas] - ( [V5 Venta Bruta] - [V5 Descuento] )",
+            "formatString": "#,0.000000",
+            "displayFolder": "Ventas/V5"
+          },
+          {
+            "name": "V5 Puente",
+            "expression": "IF ( [Ordenes] > 0, SWITCH ( SELECTEDVALUE ( PuenteVenta[Paso] ), 1, [V5 Venta Bruta], 2, - [V5 Descuento], 3, IF ( ABS ( [V5 Ajuste Redondeo] ) > 0.00000001, [V5 Ajuste Redondeo] ) ) )",
+            "formatString": "#,0.00",
+            "displayFolder": "Ventas/V5"
+          },
+          {
+            "name": "V1 Estado",
+            "expression": "IF ( COALESCE ( [Ordenes], 0 ) = 0, \"Sin ventas para la selección. \", \"\" ) & \"Venta neta sin impuestos ni flete. Margen estimado con costo estándar vigente, no utilidad neta.\"",
+            "formatString": "",
+            "displayFolder": "Ventas/V1"
+          },
+          {
+            "name": "V2 Estado",
+            "expression": "IF ( COALESCE ( [Ordenes], 0 ) = 0, \"Sin ventas para la selección. \", \"\" ) & \"Top 10 por venta neta en la selección; empates resueltos por ID. Margen con costo estándar vigente.\"",
+            "formatString": "",
+            "displayFolder": "Ventas/V2"
+          },
+          {
+            "name": "V3 Estado",
+            "expression": "IF ( COALESCE ( [Ordenes], 0 ) = 0, \"Sin ventas para la selección. \", \"\" ) & \"Territorio de la venta, no domicilio del cliente. Un comprador puede comprar en varios territorios.\"",
+            "formatString": "",
+            "displayFolder": "Ventas/V3"
+          },
+          {
+            "name": "V4 Estado",
+            "expression": "IF ( COALESCE ( [V4 Ordenes], 0 ) = 0, \"Sin ventas para la selección. \", \"\" ) & \"Solo ventas con vendedor identificado. Sin cuotas ni metas; no mide cumplimiento ni causalidad.\"",
+            "formatString": "",
+            "displayFolder": "Ventas/V4"
+          },
+          {
+            "name": "V5 Estado",
+            "expression": "IF ( COALESCE ( [Ordenes], 0 ) = 0, \"Sin ventas para la selección. \", \"\" ) & \"Oferta registrada no implica descuento aplicado. La cascada concilia redondeos; total final = venta neta.\"",
+            "formatString": "",
+            "displayFolder": "Ventas/V5"
+          }
+        ]
+      },
+      {
+        "name": "DimCustomer",
+        "columns": [
+          {
+            "name": "CustomerKey",
+            "dataType": "int64",
+            "sourceColumn": "CustomerKey",
+            "summarizeBy": "none",
+            "isKey": true,
+            "isHidden": true
+          },
+          {
+            "name": "CustomerID",
+            "dataType": "int64",
+            "sourceColumn": "CustomerID",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "CustomerType",
+            "dataType": "string",
+            "sourceColumn": "CustomerType",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "CustomerName",
+            "dataType": "string",
+            "sourceColumn": "CustomerName",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "CountryRegionName",
+            "dataType": "string",
+            "sourceColumn": "CountryRegionName",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "StateProvinceName",
+            "dataType": "string",
+            "sourceColumn": "StateProvinceName",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "City",
+            "dataType": "string",
+            "sourceColumn": "City",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "TerritoryName",
+            "dataType": "string",
+            "sourceColumn": "TerritoryName",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "TerritoryGroup",
+            "dataType": "string",
+            "sourceColumn": "TerritoryGroup",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "Tipo de Cliente",
+            "dataType": "string",
+            "type": "calculated",
+            "expression": "SWITCH ( DimCustomer[CustomerType], \"Individual\", \"Persona\", \"Store\", \"Tienda\", \"No informado\" )",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "Cliente",
+            "dataType": "string",
+            "type": "calculated",
+            "expression": "FORMAT ( DimCustomer[CustomerID], \"0\" ) & \" · \" & DimCustomer[CustomerName]",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "Localidad",
+            "dataType": "string",
+            "type": "calculated",
+            "expression": "DimCustomer[City] & \" · \" & DimCustomer[StateProvinceName] & \" · \" & DimCustomer[CountryRegionName]",
+            "summarizeBy": "none"
+          }
+        ],
+        "partitions": [
+          {
+            "name": "DimCustomer",
+            "mode": "import",
+            "source": {
+              "type": "m",
+              "expression": [
+                "let",
+                "    Origen = Sql.Database(\"localhost,1433\", \"AdventureWorksDW\"),",
+                "    Tabla = Origen{[Schema = \"dbo\", Item = \"DimCustomer\"]}[Data],",
+                "    Seleccion = Table.SelectColumns(Tabla, {\"CustomerKey\", \"CustomerID\", \"CustomerType\", \"CustomerName\", \"CountryRegionName\", \"StateProvinceName\", \"City\", \"TerritoryName\", \"TerritoryGroup\"})",
+                "in",
+                "    Seleccion"
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "DimProduct",
+        "columns": [
+          {
+            "name": "ProductKey",
+            "dataType": "int64",
+            "sourceColumn": "ProductKey",
+            "summarizeBy": "none",
+            "isHidden": true,
+            "isKey": true
+          },
+          {
+            "name": "ProductID",
+            "dataType": "int64",
+            "sourceColumn": "ProductID",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "ProductName",
+            "dataType": "string",
+            "sourceColumn": "ProductName",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "ProductNumber",
+            "dataType": "string",
+            "sourceColumn": "ProductNumber",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "MakeFlag",
+            "dataType": "boolean",
+            "sourceColumn": "MakeFlag",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "FinishedGoodsFlag",
+            "dataType": "boolean",
+            "sourceColumn": "FinishedGoodsFlag",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "Color",
+            "dataType": "string",
+            "sourceColumn": "Color",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "SafetyStockLevel",
+            "dataType": "int64",
+            "sourceColumn": "SafetyStockLevel",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "ReorderPoint",
+            "dataType": "int64",
+            "sourceColumn": "ReorderPoint",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "StandardCost",
+            "dataType": "decimal",
+            "sourceColumn": "StandardCost",
+            "summarizeBy": "none",
+            "formatString": "#,0.00"
+          },
+          {
+            "name": "ListPrice",
+            "dataType": "decimal",
+            "sourceColumn": "ListPrice",
+            "summarizeBy": "none",
+            "formatString": "#,0.00"
+          },
+          {
+            "name": "SubcategoryName",
+            "dataType": "string",
+            "sourceColumn": "SubcategoryName",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "CategoryName",
+            "dataType": "string",
+            "sourceColumn": "CategoryName",
+            "summarizeBy": "none"
+          },
+          {
+            "type": "calculated",
+            "name": "Producto",
+            "dataType": "string",
+            "expression": "FORMAT ( DimProduct[ProductID], \"0\" ) & \" · \" & DimProduct[ProductName]",
+            "summarizeBy": "none"
+          },
+          {
+            "type": "calculated",
+            "name": "Origen Productivo",
+            "dataType": "string",
+            "expression": "IF ( DimProduct[MakeFlag], \"Fabricado internamente\", \"No fabricado internamente\" )",
+            "summarizeBy": "none"
+          },
+          {
+            "type": "calculated",
+            "name": "Tipo Producto",
+            "dataType": "string",
+            "expression": "IF ( DimProduct[FinishedGoodsFlag], \"Terminado\", \"Intermedio / no terminado\" )",
+            "summarizeBy": "none"
+          }
+        ],
+        "partitions": [
+          {
+            "name": "DimProduct",
+            "mode": "import",
+            "source": {
+              "type": "m",
+              "expression": [
+                "let",
+                "    Origen = Sql.Database(\"localhost,1433\", \"AdventureWorksDW\"),",
+                "    Tabla = Origen{[Schema = \"dbo\", Item = \"DimProduct\"]}[Data],",
+                "    Seleccion = Table.SelectColumns(Tabla, {\"ProductKey\", \"ProductID\", \"ProductName\", \"ProductNumber\", \"MakeFlag\", \"FinishedGoodsFlag\", \"Color\", \"SafetyStockLevel\", \"ReorderPoint\", \"StandardCost\", \"ListPrice\", \"SubcategoryName\", \"CategoryName\"})",
+                "in",
+                "    Seleccion"
+              ]
+            }
+          }
+        ],
+        "hierarchies": [
+          {
+            "name": "Catalogo",
+            "levels": [
+              {
+                "name": "CategoryName",
+                "ordinal": 0,
+                "column": "CategoryName"
+              },
+              {
+                "name": "SubcategoryName",
+                "ordinal": 1,
+                "column": "SubcategoryName"
+              },
+              {
+                "name": "Producto",
+                "ordinal": 2,
+                "column": "Producto"
+              }
+            ]
+          }
+        ],
+        "measures": [
+          {
+            "name": "P5 Productos",
+            "expression": "COUNTROWS ( DimProduct )",
+            "formatString": "#,0",
+            "displayFolder": "Produccion/P5"
+          },
+          {
+            "name": "P5 Fabricados",
+            "expression": "CALCULATE ( COUNTROWS ( DimProduct ), KEEPFILTERS ( DimProduct[MakeFlag] = TRUE () ) )",
+            "formatString": "#,0",
+            "displayFolder": "Produccion/P5"
+          },
+          {
+            "name": "P5 No Fabricados",
+            "expression": "CALCULATE ( COUNTROWS ( DimProduct ), KEEPFILTERS ( DimProduct[MakeFlag] = FALSE () ) )",
+            "formatString": "#,0",
+            "displayFolder": "Produccion/P5"
+          },
+          {
+            "name": "P5 Terminados",
+            "expression": "CALCULATE ( COUNTROWS ( DimProduct ), KEEPFILTERS ( DimProduct[FinishedGoodsFlag] = TRUE () ) )",
+            "formatString": "#,0",
+            "displayFolder": "Produccion/P5"
+          },
+          {
+            "name": "P5 Estado",
+            "expression": "\"Catálogo sin filtro temporal. No fabricado internamente no implica compra reciente; sin categoría puede ser una pieza intermedia.\"",
+            "formatString": "",
+            "displayFolder": "Produccion/P5"
+          }
+        ]
+      },
+      {
+        "name": "DimLocation",
+        "columns": [
+          {
+            "name": "LocationKey",
+            "dataType": "int64",
+            "sourceColumn": "LocationKey",
+            "summarizeBy": "none",
+            "isHidden": true,
+            "isKey": true
+          },
+          {
+            "name": "LocationID",
+            "dataType": "int64",
+            "sourceColumn": "LocationID",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "LocationName",
+            "dataType": "string",
+            "sourceColumn": "LocationName",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "CostRate",
+            "dataType": "decimal",
+            "sourceColumn": "CostRate",
+            "summarizeBy": "none",
+            "formatString": "#,0.00"
+          },
+          {
+            "name": "Availability",
+            "dataType": "double",
+            "sourceColumn": "Availability",
+            "summarizeBy": "none",
+            "formatString": "#,0.00"
+          }
+        ],
+        "partitions": [
+          {
+            "name": "DimLocation",
+            "mode": "import",
+            "source": {
+              "type": "m",
+              "expression": [
+                "let",
+                "    Origen = Sql.Database(\"localhost,1433\", \"AdventureWorksDW\"),",
+                "    Tabla = Origen{[Schema = \"dbo\", Item = \"DimLocation\"]}[Data],",
+                "    Seleccion = Table.SelectColumns(Tabla, {\"LocationKey\", \"LocationID\", \"LocationName\", \"CostRate\", \"Availability\"})",
+                "in",
+                "    Seleccion"
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "DimScrapReason",
+        "columns": [
+          {
+            "name": "ScrapReasonKey",
+            "dataType": "int64",
+            "sourceColumn": "ScrapReasonKey",
+            "summarizeBy": "none",
+            "isHidden": true,
+            "isKey": true
+          },
+          {
+            "name": "ScrapReasonID",
+            "dataType": "int64",
+            "sourceColumn": "ScrapReasonID",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "ScrapReasonName",
+            "dataType": "string",
+            "sourceColumn": "ScrapReasonName",
+            "summarizeBy": "none"
+          }
+        ],
+        "partitions": [
+          {
+            "name": "DimScrapReason",
+            "mode": "import",
+            "source": {
+              "type": "m",
+              "expression": [
+                "let",
+                "    Origen = Sql.Database(\"localhost,1433\", \"AdventureWorksDW\"),",
+                "    Tabla = Origen{[Schema = \"dbo\", Item = \"DimScrapReason\"]}[Data],",
+                "    Seleccion = Table.SelectColumns(Tabla, {\"ScrapReasonKey\", \"ScrapReasonID\", \"ScrapReasonName\"})",
+                "in",
+                "    Seleccion"
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "FactWorkOrder",
+        "columns": [
+          {
+            "name": "FactWorkOrderKey",
+            "dataType": "int64",
+            "sourceColumn": "FactWorkOrderKey",
+            "summarizeBy": "none",
+            "isHidden": true,
+            "isKey": true
+          },
+          {
+            "name": "WorkOrderID",
+            "dataType": "int64",
+            "sourceColumn": "WorkOrderID",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "ProductKey",
+            "dataType": "int64",
+            "sourceColumn": "ProductKey",
+            "summarizeBy": "none",
+            "isHidden": true
+          },
+          {
+            "name": "ScrapReasonKey",
+            "dataType": "int64",
+            "sourceColumn": "ScrapReasonKey",
+            "summarizeBy": "none",
+            "isHidden": true
+          },
+          {
+            "name": "StartDateKey",
+            "dataType": "int64",
+            "sourceColumn": "StartDateKey",
+            "summarizeBy": "none",
+            "isHidden": true
+          },
+          {
+            "name": "EndDateKey",
+            "dataType": "int64",
+            "sourceColumn": "EndDateKey",
+            "summarizeBy": "none",
+            "isHidden": true
+          },
+          {
+            "name": "DueDateKey",
+            "dataType": "int64",
+            "sourceColumn": "DueDateKey",
+            "summarizeBy": "none",
+            "isHidden": true
+          },
+          {
+            "name": "OrderQty",
+            "dataType": "int64",
+            "sourceColumn": "OrderQty",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "StockedQty",
+            "dataType": "int64",
+            "sourceColumn": "StockedQty",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "ScrappedQty",
+            "dataType": "int64",
+            "sourceColumn": "ScrappedQty",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "ScrapCost",
+            "dataType": "decimal",
+            "sourceColumn": "ScrapCost",
+            "summarizeBy": "none",
+            "formatString": "#,0.00"
+          }
+        ],
+        "partitions": [
+          {
+            "name": "FactWorkOrder",
+            "mode": "import",
+            "source": {
+              "type": "m",
+              "expression": [
+                "let",
+                "    Origen = Sql.Database(\"localhost,1433\", \"AdventureWorksDW\"),",
+                "    Tabla = Origen{[Schema = \"dbo\", Item = \"FactWorkOrder\"]}[Data],",
+                "    Seleccion = Table.SelectColumns(Tabla, {\"FactWorkOrderKey\", \"WorkOrderID\", \"ProductKey\", \"ScrapReasonKey\", \"StartDateKey\", \"EndDateKey\", \"DueDateKey\", \"OrderQty\", \"StockedQty\", \"ScrappedQty\", \"ScrapCost\"})",
+                "in",
+                "    Seleccion"
+              ]
+            }
+          }
+        ],
+        "measures": [
+          {
+            "name": "P1 Ordenes",
+            "expression": "COUNTROWS ( FactWorkOrder )",
+            "formatString": "#,0",
+            "displayFolder": "Produccion/P1"
+          },
+          {
+            "name": "P1 Unidades Ordenadas",
+            "expression": "SUM ( FactWorkOrder[OrderQty] )",
+            "formatString": "#,0",
+            "displayFolder": "Produccion/P1"
+          },
+          {
+            "name": "P1 Unidades Almacenadas",
+            "expression": "SUM ( FactWorkOrder[StockedQty] )",
+            "formatString": "#,0",
+            "displayFolder": "Produccion/P1"
+          },
+          {
+            "name": "P1 Unidades Descartadas",
+            "expression": "SUM ( FactWorkOrder[ScrappedQty] )",
+            "formatString": "#,0",
+            "displayFolder": "Produccion/P1"
+          },
+          {
+            "name": "P2 Ordenes Con Descarte",
+            "expression": "CALCULATE ( COUNTROWS ( FactWorkOrder ), KEEPFILTERS ( FactWorkOrder[ScrappedQty] > 0 ) )",
+            "formatString": "#,0",
+            "displayFolder": "Produccion/P2"
+          },
+          {
+            "name": "P2 Motivos Utilizados",
+            "expression": "CALCULATE ( DISTINCTCOUNT ( FactWorkOrder[ScrapReasonKey] ), KEEPFILTERS ( FactWorkOrder[ScrappedQty] > 0 ), KEEPFILTERS ( FactWorkOrder[ScrapReasonKey] <> 0 ) )",
+            "formatString": "#,0",
+            "displayFolder": "Produccion/P2"
+          },
+          {
+            "name": "P2 Unidades Por Motivo",
+            "expression": "IF ( [P1 Unidades Descartadas] > 0, [P1 Unidades Descartadas] )",
+            "formatString": "#,0",
+            "displayFolder": "Produccion/P2"
+          },
+          {
+            "name": "P2 Costo Estimado",
+            "expression": "SUM ( FactWorkOrder[ScrapCost] )",
+            "formatString": "#,0.00",
+            "displayFolder": "Produccion/P2"
+          },
+          {
+            "name": "P2 Tasa Descarte",
+            "expression": "DIVIDE ( [P1 Unidades Descartadas], [P1 Unidades Ordenadas] )",
+            "formatString": "0.00%",
+            "displayFolder": "Produccion/P2"
+          },
+          {
+            "name": "P2 Costo Por Motivo",
+            "expression": "IF ( [P1 Unidades Descartadas] > 0, [P2 Costo Estimado] )",
+            "formatString": "#,0.00",
+            "displayFolder": "Produccion/P2"
+          },
+          {
+            "name": "P1 Estado",
+            "expression": "IF ( ISBLANK ( [P1 Ordenes] ), \"Sin órdenes para la selección. \", \"\" ) & \"Órdenes por fecha de inicio; unidades almacenadas de esas órdenes, no cierres del mes.\"",
+            "formatString": "",
+            "displayFolder": "Produccion/P1"
+          },
+          {
+            "name": "P2 Estado",
+            "expression": "\"Descarte / unidades ordenadas. Costo estimado con costo estándar; motivo registrado, no causa demostrada.\"",
+            "formatString": "",
+            "displayFolder": "Produccion/P2"
+          },
+          {
+            "name": "P2 Descarte Acumulado Porcentaje",
+            "expression": "VAR DescarteActual = [P2 Unidades Por Motivo] VAR TablaMotivos = ADDCOLUMNS ( ALLSELECTED ( DimScrapReason ), \"@Descarte\", [P2 Unidades Por Motivo] ) RETURN IF ( NOT ISBLANK ( DescarteActual ) && HASONEVALUE ( DimScrapReason[ScrapReasonKey] ), DIVIDE ( SUMX ( FILTER ( TablaMotivos, NOT ISBLANK ( [@Descarte] ) && [@Descarte] >= DescarteActual ), [@Descarte] ), SUMX ( TablaMotivos, [@Descarte] ) ) )",
+            "formatString": "0.00%",
+            "displayFolder": "Produccion/P2"
+          }
+        ]
+      },
+      {
+        "name": "FactWorkOrderRouting",
+        "columns": [
+          {
+            "name": "FactRoutingKey",
+            "dataType": "int64",
+            "sourceColumn": "FactRoutingKey",
+            "summarizeBy": "none",
+            "isHidden": true,
+            "isKey": true
+          },
+          {
+            "name": "WorkOrderID",
+            "dataType": "int64",
+            "sourceColumn": "WorkOrderID",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "ProductKey",
+            "dataType": "int64",
+            "sourceColumn": "ProductKey",
+            "summarizeBy": "none",
+            "isHidden": true
+          },
+          {
+            "name": "LocationKey",
+            "dataType": "int64",
+            "sourceColumn": "LocationKey",
+            "summarizeBy": "none",
+            "isHidden": true
+          },
+          {
+            "name": "OperationSequence",
+            "dataType": "int64",
+            "sourceColumn": "OperationSequence",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "ScheduledStartDateKey",
+            "dataType": "int64",
+            "sourceColumn": "ScheduledStartDateKey",
+            "summarizeBy": "none",
+            "isHidden": true
+          },
+          {
+            "name": "ScheduledEndDateKey",
+            "dataType": "int64",
+            "sourceColumn": "ScheduledEndDateKey",
+            "summarizeBy": "none",
+            "isHidden": true
+          },
+          {
+            "name": "ActualStartDateKey",
+            "dataType": "int64",
+            "sourceColumn": "ActualStartDateKey",
+            "summarizeBy": "none",
+            "isHidden": true
+          },
+          {
+            "name": "ActualEndDateKey",
+            "dataType": "int64",
+            "sourceColumn": "ActualEndDateKey",
+            "summarizeBy": "none",
+            "isHidden": true
+          },
+          {
+            "name": "ActualResourceHrs",
+            "dataType": "double",
+            "sourceColumn": "ActualResourceHrs",
+            "summarizeBy": "none",
+            "formatString": "#,0.00"
+          },
+          {
+            "name": "PlannedCost",
+            "dataType": "decimal",
+            "sourceColumn": "PlannedCost",
+            "summarizeBy": "none",
+            "formatString": "#,0.00"
+          },
+          {
+            "name": "ActualCost",
+            "dataType": "decimal",
+            "sourceColumn": "ActualCost",
+            "summarizeBy": "none",
+            "formatString": "#,0.00"
+          },
+          {
+            "name": "CostVariance",
+            "dataType": "decimal",
+            "sourceColumn": "CostVariance",
+            "summarizeBy": "none",
+            "formatString": "#,0.00"
+          }
+        ],
+        "partitions": [
+          {
+            "name": "FactWorkOrderRouting",
+            "mode": "import",
+            "source": {
+              "type": "m",
+              "expression": [
+                "let",
+                "    Origen = Sql.Database(\"localhost,1433\", \"AdventureWorksDW\"),",
+                "    Tabla = Origen{[Schema = \"dbo\", Item = \"FactWorkOrderRouting\"]}[Data],",
+                "    Seleccion = Table.SelectColumns(Tabla, {\"FactRoutingKey\", \"WorkOrderID\", \"ProductKey\", \"LocationKey\", \"OperationSequence\", \"ScheduledStartDateKey\", \"ScheduledEndDateKey\", \"ActualStartDateKey\", \"ActualEndDateKey\", \"ActualResourceHrs\", \"PlannedCost\", \"ActualCost\", \"CostVariance\"})",
+                "in",
+                "    Seleccion"
+              ]
+            }
+          }
+        ],
+        "measures": [
+          {
+            "name": "P4 Operaciones",
+            "expression": "COUNTROWS ( FactWorkOrderRouting )",
+            "formatString": "#,0",
+            "displayFolder": "Produccion/P4"
+          },
+          {
+            "name": "P4 Horas",
+            "expression": "SUM ( FactWorkOrderRouting[ActualResourceHrs] )",
+            "formatString": "#,0.00",
+            "displayFolder": "Produccion/P4"
+          },
+          {
+            "name": "P4 Costo Real",
+            "expression": "SUM ( FactWorkOrderRouting[ActualCost] )",
+            "formatString": "#,0.00",
+            "displayFolder": "Produccion/P4"
+          },
+          {
+            "name": "P4 Costo Planificado",
+            "expression": "SUM ( FactWorkOrderRouting[PlannedCost] )",
+            "formatString": "#,0.00",
+            "displayFolder": "Produccion/P4"
+          },
+          {
+            "name": "P4 Variacion Costo",
+            "expression": "SUM ( FactWorkOrderRouting[CostVariance] )",
+            "formatString": "#,0.00",
+            "displayFolder": "Produccion/P4"
+          },
+          {
+            "name": "P4 Sin Inicio Real",
+            "expression": "CALCULATE ( COUNTROWS ( FactWorkOrderRouting ), KEEPFILTERS ( FactWorkOrderRouting[ActualStartDateKey] = -1 ) )",
+            "formatString": "#,0",
+            "displayFolder": "Produccion/P4"
+          },
+          {
+            "name": "P4 Estado",
+            "expression": "\"Operaciones por inicio real, no órdenes. Sin inicio informado: \" & FORMAT ( COALESCE ( [P4 Sin Inicio Real], 0 ), \"#,0\" ) & \". Horas consumidas no equivalen a utilización de capacidad.\"",
+            "formatString": "",
+            "displayFolder": "Produccion/P4"
+          }
+        ]
+      },
+      {
+        "name": "FactInventorySnapshot",
+        "columns": [
+          {
+            "name": "FactInventoryKey",
+            "dataType": "int64",
+            "sourceColumn": "FactInventoryKey",
+            "summarizeBy": "none",
+            "isHidden": true,
+            "isKey": true
+          },
+          {
+            "name": "ProductKey",
+            "dataType": "int64",
+            "sourceColumn": "ProductKey",
+            "summarizeBy": "none",
+            "isHidden": true
+          },
+          {
+            "name": "LocationKey",
+            "dataType": "int64",
+            "sourceColumn": "LocationKey",
+            "summarizeBy": "none",
+            "isHidden": true
+          },
+          {
+            "name": "Shelf",
+            "dataType": "string",
+            "sourceColumn": "Shelf",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "Bin",
+            "dataType": "int64",
+            "sourceColumn": "Bin",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "Quantity",
+            "dataType": "int64",
+            "sourceColumn": "Quantity",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "InventoryValue",
+            "dataType": "decimal",
+            "sourceColumn": "InventoryValue",
+            "summarizeBy": "none",
+            "formatString": "#,0.00"
+          }
+        ],
+        "partitions": [
+          {
+            "name": "FactInventorySnapshot",
+            "mode": "import",
+            "source": {
+              "type": "m",
+              "expression": [
+                "let",
+                "    Origen = Sql.Database(\"localhost,1433\", \"AdventureWorksDW\"),",
+                "    Tabla = Origen{[Schema = \"dbo\", Item = \"FactInventorySnapshot\"]}[Data],",
+                "    Seleccion = Table.SelectColumns(Tabla, {\"FactInventoryKey\", \"ProductKey\", \"LocationKey\", \"Shelf\", \"Bin\", \"Quantity\", \"InventoryValue\"})",
+                "in",
+                "    Seleccion"
+              ]
+            }
+          }
+        ],
+        "measures": [
+          {
+            "name": "P3 Stock",
+            "expression": "SUM ( FactInventorySnapshot[Quantity] )",
+            "formatString": "#,0",
+            "displayFolder": "Produccion/P3"
+          },
+          {
+            "name": "P3 Valor Estimado",
+            "expression": "SUM ( FactInventorySnapshot[InventoryValue] )",
+            "formatString": "#,0.00",
+            "displayFolder": "Produccion/P3"
+          },
+          {
+            "name": "P3 Productos Con Registro",
+            "expression": "DISTINCTCOUNT ( FactInventorySnapshot[ProductKey] )",
+            "formatString": "#,0",
+            "displayFolder": "Produccion/P3"
+          },
+          {
+            "name": "P3 Stock Total Producto",
+            "expression": "CALCULATE ( [P3 Stock], REMOVEFILTERS ( DimLocation ), REMOVEFILTERS ( FactInventorySnapshot[LocationKey], FactInventorySnapshot[Shelf], FactInventorySnapshot[Bin] ) )",
+            "formatString": "#,0",
+            "displayFolder": "Produccion/P3"
+          },
+          {
+            "name": "P3 Bajo Reorden",
+            "expression": "SUMX ( VALUES ( DimProduct[ProductKey] ), VAR Existencias = [P3 Stock Total Producto] VAR Umbral = CALCULATE ( MAX ( DimProduct[ReorderPoint] ) ) RETURN IF ( NOT ISBLANK ( Existencias ) && Existencias < Umbral, 1, 0 ) )",
+            "formatString": "#,0",
+            "displayFolder": "Produccion/P3"
+          },
+          {
+            "name": "P3 Estado Stock",
+            "expression": "VAR Local = [P3 Stock] VAR TotalProducto = [P3 Stock Total Producto] VAR Umbral = SELECTEDVALUE ( DimProduct[ReorderPoint] ) RETURN IF ( NOT ISBLANK ( Local ) && HASONEVALUE ( DimProduct[ProductKey] ), IF ( TotalProducto < Umbral, \"Bajo reorden global\", \"Sobre umbral global\" ) )",
+            "formatString": "",
+            "displayFolder": "Produccion/P3"
+          },
+          {
+            "name": "P3 Estado",
+            "expression": "\"Foto actual, sin histórico. Reorden compara stock global del producto; ubicación filtra stock y valor locales.\"",
+            "formatString": "",
+            "displayFolder": "Produccion/P3"
+          },
+          {
+            "name": "P3 Brecha Reorden",
+            "expression": "VAR StockGlobal = [P3 Stock Total Producto] RETURN IF ( HASONEVALUE ( DimProduct[ProductKey] ) && NOT ISBLANK ( StockGlobal ), StockGlobal - SELECTEDVALUE ( DimProduct[ReorderPoint] ) )",
+            "formatString": "#,0",
+            "displayFolder": "Produccion/P3"
+          }
+        ]
+      },
+      {
+        "name": "DimSalesPerson",
+        "columns": [
+          {
+            "name": "SalesPersonKey",
+            "dataType": "int64",
+            "sourceColumn": "SalesPersonKey",
+            "summarizeBy": "none",
+            "isHidden": true,
+            "isKey": true
+          },
+          {
+            "name": "BusinessEntityID",
+            "dataType": "int64",
+            "sourceColumn": "BusinessEntityID",
+            "summarizeBy": "none",
+            "isHidden": false
+          },
+          {
+            "name": "FullName",
+            "dataType": "string",
+            "sourceColumn": "FullName",
+            "summarizeBy": "none",
+            "isHidden": false
+          },
+          {
+            "name": "JobTitle",
+            "dataType": "string",
+            "sourceColumn": "JobTitle",
+            "summarizeBy": "none",
+            "isHidden": false
+          },
+          {
+            "type": "calculated",
+            "name": "Vendedor",
+            "dataType": "string",
+            "summarizeBy": "none",
+            "expression": "FORMAT ( DimSalesPerson[BusinessEntityID], \"0\" ) & \" · \" & DimSalesPerson[FullName]"
+          }
+        ],
+        "partitions": [
+          {
+            "name": "DimSalesPerson",
+            "mode": "import",
+            "source": {
+              "type": "m",
+              "expression": [
+                "let",
+                "    Origen = Sql.Database(\"localhost,1433\", \"AdventureWorksDW\"),",
+                "    Tabla = Origen{[Schema=\"dbo\", Item=\"DimSalesPerson\"]}[Data],",
+                "    Seleccion = Table.SelectColumns(Tabla, {\"SalesPersonKey\", \"BusinessEntityID\", \"FullName\", \"JobTitle\"})",
+                "in",
+                "    Seleccion"
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "DimSpecialOffer",
+        "columns": [
+          {
+            "name": "SpecialOfferKey",
+            "dataType": "int64",
+            "sourceColumn": "SpecialOfferKey",
+            "summarizeBy": "none",
+            "isHidden": true,
+            "isKey": true
+          },
+          {
+            "name": "SpecialOfferID",
+            "dataType": "int64",
+            "sourceColumn": "SpecialOfferID",
+            "summarizeBy": "none",
+            "isHidden": false
+          },
+          {
+            "name": "Description",
+            "dataType": "string",
+            "sourceColumn": "Description",
+            "summarizeBy": "none",
+            "isHidden": false
+          },
+          {
+            "name": "DiscountPct",
+            "dataType": "decimal",
+            "sourceColumn": "DiscountPct",
+            "summarizeBy": "none",
+            "isHidden": false
+          },
+          {
+            "name": "Type",
+            "dataType": "string",
+            "sourceColumn": "Type",
+            "summarizeBy": "none",
+            "isHidden": false
+          },
+          {
+            "name": "Category",
+            "dataType": "string",
+            "sourceColumn": "Category",
+            "summarizeBy": "none",
+            "isHidden": false
+          }
+        ],
+        "partitions": [
+          {
+            "name": "DimSpecialOffer",
+            "mode": "import",
+            "source": {
+              "type": "m",
+              "expression": [
+                "let",
+                "    Origen = Sql.Database(\"localhost,1433\", \"AdventureWorksDW\"),",
+                "    Tabla = Origen{[Schema=\"dbo\", Item=\"DimSpecialOffer\"]}[Data],",
+                "    Seleccion = Table.SelectColumns(Tabla, {\"SpecialOfferKey\", \"SpecialOfferID\", \"Description\", \"DiscountPct\", \"Type\", \"Category\"})",
+                "in",
+                "    Seleccion"
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "PuenteVenta",
+        "columns": [
+          {
+            "name": "Paso",
+            "dataType": "int64",
+            "sourceColumn": "Paso",
+            "summarizeBy": "none",
+            "isHidden": true
+          },
+          {
+            "name": "Concepto",
+            "dataType": "string",
+            "sourceColumn": "Concepto",
+            "summarizeBy": "none",
+            "sortByColumn": "Paso"
+          }
+        ],
+        "partitions": [
+          {
+            "name": "PuenteVenta",
+            "mode": "import",
+            "source": {
+              "type": "m",
+              "expression": [
+                "#table(type table [Paso=Int64.Type, Concepto=text], {{1,\"Venta bruta\"},{2,\"Descuentos\"},{3,\"Ajuste de redondeo\"}})"
+              ]
+            }
+          }
+        ]
+      }
+    ],
+    "relationships": [
+      {
+        "name": "FactSales_OrderDate",
+        "fromTable": "FactSales",
+        "fromColumn": "OrderDateKey",
+        "toTable": "DimDate",
+        "toColumn": "DateKey",
+        "fromCardinality": "many",
+        "toCardinality": "one",
+        "crossFilteringBehavior": "oneDirection",
+        "isActive": true
+      },
+      {
+        "name": "FactSales_Territory",
+        "fromTable": "FactSales",
+        "fromColumn": "TerritoryKey",
+        "toTable": "DimTerritory",
+        "toColumn": "TerritoryKey",
+        "fromCardinality": "many",
+        "toCardinality": "one",
+        "crossFilteringBehavior": "oneDirection",
+        "isActive": true
+      },
+      {
+        "name": "FactSales_Customer",
+        "fromTable": "FactSales",
+        "fromColumn": "CustomerKey",
+        "toTable": "DimCustomer",
+        "toColumn": "CustomerKey",
+        "fromCardinality": "many",
+        "toCardinality": "one",
+        "crossFilteringBehavior": "oneDirection",
+        "isActive": true
+      },
+      {
+        "name": "FactSales_ProductKey_DimProduct",
+        "fromTable": "FactSales",
+        "fromColumn": "ProductKey",
+        "toTable": "DimProduct",
+        "toColumn": "ProductKey",
+        "fromCardinality": "many",
+        "toCardinality": "one",
+        "crossFilteringBehavior": "oneDirection",
+        "isActive": true
+      },
+      {
+        "name": "FactWorkOrder_ProductKey_DimProduct",
+        "fromTable": "FactWorkOrder",
+        "fromColumn": "ProductKey",
+        "toTable": "DimProduct",
+        "toColumn": "ProductKey",
+        "fromCardinality": "many",
+        "toCardinality": "one",
+        "crossFilteringBehavior": "oneDirection",
+        "isActive": true
+      },
+      {
+        "name": "FactWorkOrderRouting_ProductKey_DimProduct",
+        "fromTable": "FactWorkOrderRouting",
+        "fromColumn": "ProductKey",
+        "toTable": "DimProduct",
+        "toColumn": "ProductKey",
+        "fromCardinality": "many",
+        "toCardinality": "one",
+        "crossFilteringBehavior": "oneDirection",
+        "isActive": true
+      },
+      {
+        "name": "FactInventorySnapshot_ProductKey_DimProduct",
+        "fromTable": "FactInventorySnapshot",
+        "fromColumn": "ProductKey",
+        "toTable": "DimProduct",
+        "toColumn": "ProductKey",
+        "fromCardinality": "many",
+        "toCardinality": "one",
+        "crossFilteringBehavior": "oneDirection",
+        "isActive": true
+      },
+      {
+        "name": "FactWorkOrder_ScrapReasonKey_DimScrapReason",
+        "fromTable": "FactWorkOrder",
+        "fromColumn": "ScrapReasonKey",
+        "toTable": "DimScrapReason",
+        "toColumn": "ScrapReasonKey",
+        "fromCardinality": "many",
+        "toCardinality": "one",
+        "crossFilteringBehavior": "oneDirection",
+        "isActive": true
+      },
+      {
+        "name": "FactWorkOrder_StartDateKey_DimDate",
+        "fromTable": "FactWorkOrder",
+        "fromColumn": "StartDateKey",
+        "toTable": "DimDate",
+        "toColumn": "DateKey",
+        "fromCardinality": "many",
+        "toCardinality": "one",
+        "crossFilteringBehavior": "oneDirection",
+        "isActive": true
+      },
+      {
+        "name": "FactWorkOrderRouting_LocationKey_DimLocation",
+        "fromTable": "FactWorkOrderRouting",
+        "fromColumn": "LocationKey",
+        "toTable": "DimLocation",
+        "toColumn": "LocationKey",
+        "fromCardinality": "many",
+        "toCardinality": "one",
+        "crossFilteringBehavior": "oneDirection",
+        "isActive": true
+      },
+      {
+        "name": "FactWorkOrderRouting_ActualStartDateKey_DimDate",
+        "fromTable": "FactWorkOrderRouting",
+        "fromColumn": "ActualStartDateKey",
+        "toTable": "DimDate",
+        "toColumn": "DateKey",
+        "fromCardinality": "many",
+        "toCardinality": "one",
+        "crossFilteringBehavior": "oneDirection",
+        "isActive": true
+      },
+      {
+        "name": "FactInventorySnapshot_LocationKey_DimLocation",
+        "fromTable": "FactInventorySnapshot",
+        "fromColumn": "LocationKey",
+        "toTable": "DimLocation",
+        "toColumn": "LocationKey",
+        "fromCardinality": "many",
+        "toCardinality": "one",
+        "crossFilteringBehavior": "oneDirection",
+        "isActive": true
+      },
+      {
+        "name": "FactSales_SalesPersonKey_DimSalesPerson",
+        "fromTable": "FactSales",
+        "fromColumn": "SalesPersonKey",
+        "toTable": "DimSalesPerson",
+        "toColumn": "SalesPersonKey",
+        "fromCardinality": "many",
+        "toCardinality": "one",
+        "crossFilteringBehavior": "oneDirection",
+        "isActive": true
+      },
+      {
+        "name": "FactSales_SpecialOfferKey_DimSpecialOffer",
+        "fromTable": "FactSales",
+        "fromColumn": "SpecialOfferKey",
+        "toTable": "DimSpecialOffer",
+        "toColumn": "SpecialOfferKey",
+        "fromCardinality": "many",
+        "toCardinality": "one",
+        "crossFilteringBehavior": "oneDirection",
+        "isActive": true
+      }
+    ],
+    "annotations": [
+      {
+        "name": "PBI_QueryOrder",
+        "value": "[\"DimDate\", \"DimTerritory\", \"FactSales\", \"DimCustomer\", \"DimProduct\", \"DimLocation\", \"DimScrapReason\", \"FactWorkOrder\", \"FactWorkOrderRouting\", \"FactInventorySnapshot\", \"DimSalesPerson\", \"DimSpecialOffer\", \"PuenteVenta\"]"
+      },
+      {
+        "name": "__PBI_TimeIntelligenceEnabled",
+        "value": "0"
+      }
+    ]
+  }
+}

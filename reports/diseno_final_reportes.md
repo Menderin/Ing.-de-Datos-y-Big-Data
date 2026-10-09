@@ -8,6 +8,20 @@
 
 ## 1. Introducción y Marco de Reportabilidad
 
+**Ventas actualizadas:** V1-V5 están definidas en el mismo PBIP, con estética verde.
+La ficha vigente `powerbi/piloto/ventas-finales.md` prevalece sobre los bocetos
+históricos siguientes: V2 usa top 10 por venta neta, V3 territorio de la operación,
+V4 desempeño sin cuotas y V5 descuento realmente aplicado con conciliación de redondeos.
+Las nuevas importaciones y visuales deben revisarse tras reabrir y actualizar Desktop.
+
+**Producción actualizada:** P1-P5 tienen definiciones de página en el proyecto Power BI.
+La ficha vigente está en `powerbi/piloto/produccion-finales.md` y prevalece sobre
+los bocetos históricos de producción que figuran más abajo. P5 se enfoca en catálogo,
+sin repetir ventas/inventario; P1 usa fecha de inicio y P3 no tiene histórico temporal.
+SQL y estructura comprobados; falta verificar apertura, actualización y DAX en Desktop.
+
+**Implementación de Clientes actualizada:** C1-C5 ya tienen definiciones de página en el proyecto Power BI. La ficha vigente de C2-C5, sus diferencias funcionales y las pruebas de referencia están en `powerbi/piloto/clientes-finales.md`; prevalece sobre los bocetos históricos de estas páginas que figuran más abajo. Su apertura y ejecución DAX deben comprobarse en Desktop.
+
 El presente documento establece el **diseño final y definitivo de los 15 reportes analíticos** requeridos para la plataforma de Business Intelligence de *Adventure Works Cycles*.
 
 Habiendo validado los mockups conceptuales e interactivos en la Entrega 1 (`Taller1/mocks/index.html`), este diseño formaliza:
@@ -24,9 +38,9 @@ Habiendo validado los mockups conceptuales e interactivos en la Entrega 1 (`Tall
 |:---|:---|:---|:---|:---|:---|
 | **C1** | Clientes | Panorama General de Cartera | `FactSales` | `DimCustomer`, `DimDate` | Cliente / Tipo de Cliente |
 | **C2** | Clientes | Valor y Ranking de Clientes (Pareto) | `FactSales` | `DimCustomer`, `DimDate` | Cliente individual o tienda |
-| **C3** | Clientes | Frecuencia y Recencia (RFM) | `FactSales` | `DimCustomer`, `DimDate` | Cliente consolidado |
+| **C3** | Clientes | Frecuencia y Recencia (sin puntuación RFM) | `FactSales` | `DimCustomer`, `DimDate` | Cliente consolidado |
 | **C4** | Clientes | Distribución Geográfica de Clientes | `FactSales` | `DimCustomer`, `DimTerritory` | País / Estado / Ciudad |
-| **C5** | Clientes | Canal de Compra (B2C vs B2B) | `FactSales` | `DimCustomer`, `DimSalesPerson`, `DimDate` | Canal de venta (Online / Asistido) |
+| **C5** | Clientes | Canal de Compra (Online vs Asistido) | `FactSales` | `DimCustomer`, `DimDate` | Canal y tipo de cliente |
 | **P1** | Producción | Resumen General de Manufactura | `FactWorkOrder` | `DimProduct`, `DimDate` | Orden de trabajo |
 | **P2** | Producción | Calidad y Desperdicio (*Scrap*) | `FactWorkOrder` | `DimProduct`, `DimScrapReason`, `DimDate` | Motivo de scrap / Producto |
 | **P3** | Producción | Control de Inventario y Stock | `FactInventorySnapshot` | `DimProduct`, `DimLocation` | Producto / Ubicación de almacén |
@@ -35,7 +49,7 @@ Habiendo validado los mockups conceptuales e interactivos en la Entrega 1 (`Tall
 | **V1** | Ventas | Resumen Ejecutivo de Ventas | `FactSales` | `DimDate`, `DimTerritory` | Mensual / Territorial |
 | **V2** | Ventas | Rendimiento por Producto y Categoría| `FactSales` | `DimProduct`, `DimDate` | Categoría / Subcategoría / Producto |
 | **V3** | Ventas | Desempeño Territorial y Regional | `FactSales` | `DimTerritory`, `DimDate` | Grupo / País / Región |
-| **V4** | Ventas | Desempeño y Cuotas de Vendedores | `FactSales` | `DimSalesPerson`, `DimTerritory`, `DimDate`| Ejecutivo de ventas |
+| **V4** | Ventas | Desempeño de Vendedores (sin cuotas) | `FactSales` | `DimSalesPerson`, `DimTerritory`, `DimDate`| Ejecutivo de ventas |
 | **V5** | Ventas | Descuentos, Ofertas y Venta Neta | `FactSales` | `DimSpecialOffer`, `DimProduct`, `DimDate` | Tipo de promoción |
 
 ---
@@ -45,16 +59,18 @@ Habiendo validado los mockups conceptuales e interactivos en la Entrega 1 (`Tall
 ### 3.1 Perspectiva 1: Clientes
 
 #### Reporte C1: Panorama General de Cartera
-- **Objetivo de Negocio:** Evaluar el crecimiento de la base de clientes, discriminando entre consumidores finales (personas B2C) y tiendas asociadas (distribuidores B2B).
+- **Objetivo de Negocio:** Describir la cartera actual y sus clientes compradores, distinguiendo personas y tiendas. El DW no contiene fecha de alta del cliente: la primera compra no demuestra crecimiento de registros.
 - **Tarjetas KPI:**
-  - *Clientes Registrados:* `DISTINCTCOUNT(DimCustomer[CustomerID])` (19.820)
-  - *Clientes Compradores:* `CALCULATE(DISTINCTCOUNT(FactSales[CustomerKey]))` (19.119)
-  - *Clientes Individuales:* `CALCULATE(COUNTROWS(DimCustomer), DimCustomer[CustomerType] = "Individual")` (18.484; 93,3%)
-  - *Tiendas Asociadas:* `CALCULATE(COUNTROWS(DimCustomer), DimCustomer[CustomerType] = "Store")` (1.336; 6,7%)
+  - *Clientes Registrados:* `COALESCE(COUNTROWS(DimCustomer), 0)` (19.820).
+  - *Clientes Compradores:* `COALESCE(DISTINCTCOUNT(FactSales[CustomerKey]), 0)` (19.119 sin filtros).
+  - *Clientes Sin Compra:* registrados menos compradores del periodo (701 sin filtros).
+  - *Porcentaje de Compradores:* compradores / registrados mediante `DIVIDE` (96,46% sin filtros).
 - **Visualizaciones Principales:**
   - Gráfico de barras apiladas: Composición de clientes compradores vs no compradores por territorio (`DimCustomer[TerritoryName]`).
   - Gráfico de donas: Proporción de clientes Individuales vs Tiendas.
-  - Tabla de detalle: Lista de clientes con territorio, tipo y fecha de primera compra.
+  - Tabla de detalle: ID, nombre, territorio, tipo, órdenes y fecha de primera compra del periodo seleccionado. No es fecha de alta del cliente.
+- **Filtros y alcance:** año y mes filtran compras, no la cartera registrada; tipo y territorio del cliente filtran ambos. La composición de cartera sigue siendo 18.484 personas y 1.336 tiendas sin filtros. No ocultar clientes o periodos sin ventas en este reporte: son parte del análisis de cartera.
+- **Implementación:** página `C1 - Panorama de clientes` en el mismo proyecto de Power BI que V1. Definición y SQL comprobados; la apertura y las consultas DAX de C1 deben verificarse en Desktop. Ver `powerbi/piloto/C1-panorama-clientes.md`.
 - **Jerarquía Drill Down:** `DimCustomer[TerritoryGroup]` → `DimCustomer[CountryRegionName]` → `DimCustomer[StateProvinceName]` → `DimCustomer[CustomerName]` (todas en `DimCustomer`: Power BI solo permite jerarquías dentro de una misma tabla).
 
 #### Reporte C2: Valor y Ranking de Clientes (Análisis de Pareto)
@@ -91,7 +107,7 @@ Habiendo validado los mockups conceptuales e interactivos en la Entrega 1 (`Tall
   - Mapa coroplético / de burbujas: Densidad de clientes y volumen de facturación por país/estado.
   - Gráfico de barras horizontales: Clientes por territorio ordenados descendentemente.
 
-#### Reporte C5: Canal de Compra (Digital B2C vs Asistido B2B)
+#### Reporte C5: Canal de Compra (Online vs Asistido)
 - **Objetivo de Negocio:** Comparar la dinámica entre el canal de autoservicio web (`OnlineOrderFlag = 1`) y el canal tradicional atendido por ejecutivos comerciales (`OnlineOrderFlag = 0`).
 - **Tarjetas KPI:**
   - *Órdenes Online:* `CALCULATE(DISTINCTCOUNT(FactSales[SalesOrderID]), FactSales[OnlineOrderFlag] = 1)` (27.659; 87,9%)
@@ -124,7 +140,7 @@ Habiendo validado los mockups conceptuales e interactivos en la Entrega 1 (`Tall
   - *Costo Total de Desperdicio:* `SUM(FactWorkOrder[ScrapCost])` ($359.947)
   - *Tasa Global de Scrap:* `SUM(FactWorkOrder[ScrappedQty]) / SUM(FactWorkOrder[OrderQty])` (0,24%)
   - *Órdenes con Descarte:* `CALCULATE(COUNTROWS(FactWorkOrder), FactWorkOrder[ScrappedQty] > 0)` (729)
-  - *Motivos de Descarte:* `DISTINCTCOUNT(DimScrapReason[ScrapReasonKey])` (16 motivos registrados)
+  - *Motivos de Descarte:* `CALCULATE(DISTINCTCOUNT(DimScrapReason[ScrapReasonKey]), DimScrapReason[ScrapReasonKey] <> 0)` (16 motivos reales; no contar el miembro «Sin Desperdicio»).
 - **Visualizaciones Principales:**
   - Gráfico de barras horizontales: Unidades y costos desechados por motivo (`DimScrapReason[ScrapReasonName]`).
   - Treemap: Productos con mayor impacto financiero por merma.
@@ -134,12 +150,13 @@ Habiendo validado los mockups conceptuales e interactivos en la Entrega 1 (`Tall
 - **Tarjetas KPI:**
   - *Unidades en Stock:* `SUM(FactInventorySnapshot[Quantity])` (335.974)
   - *Valor del Inventario:* `SUM(FactInventorySnapshot[InventoryValue])`
-  - *Productos con Existencia:* `DISTINCTCOUNT(FactInventorySnapshot[ProductKey])` (432)
+  - *Productos con Registro de Stock:* `DISTINCTCOUNT(FactInventorySnapshot[ProductKey])` (432; incluye productos con cantidad cero).
+  - *Productos con Existencia:* `CALCULATE(DISTINCTCOUNT(FactInventorySnapshot[ProductKey]), FactInventorySnapshot[Quantity] > 0)` (428 con stock positivo).
   - *Centros de Almacenamiento:* `DISTINCTCOUNT(DimLocation[LocationKey])` (14)
 - **Visualizaciones Principales:**
   - Gráfico de barras apiladas: Unidades disponibles por almacén (`DimLocation[LocationName]`).
   - Semáforo de stock: Productos por debajo del punto de reorden (`DimProduct[ReorderPoint]`).
-- **Jerarquía Drill Down:** `DimLocation[LocationName]` → `DimProduct[CategoryName]` → `DimProduct[ProductName]`.
+- **Navegación:** Ubicación, categoría y producto pueden añadirse como niveles de un visual. No constituyen una jerarquía nativa entre tablas distintas. El inventario es una foto actual: el filtro de fecha no debe sugerir stock histórico.
 
 #### Reporte P4: Rendimiento Operacional por Centro de Trabajo
 - **Objetivo de Negocio:** Medir la eficiencia y desviaciones en horas máquina/hombre y costos de manufactura.
@@ -187,7 +204,8 @@ Habiendo validado los mockups conceptuales e interactivos en la Entrega 1 (`Tall
   - *Unidades Vendidas:* `SUM(FactSales[OrderQty])` (274.914)
   - *Productos con Venta Activa:* `DISTINCTCOUNT(FactSales[ProductKey])` (266)
   - *Categoría Líder en Facturación:* `Bikes` (86,2% de la facturación)
-  - *Precio Promedio de Venta:* `AVERAGE(FactSales[UnitPrice])`
+  - *Precio Promedio por Línea:* `AVERAGE(FactSales[UnitPrice])` (media no ponderada, antes del descuento).
+  - *Precio Neto por Unidad:* `[Ventas Netas] / [Unidades Vendidas]` (ponderado por cantidades e incluye descuentos).
 - **Visualizaciones Principales:**
   - Gráfico de barras jerárquico: Ventas y Margen por Categoría y Subcategoría.
   - Tabla Top 20 productos más vendidos (volumen monetario y unidades).
@@ -197,24 +215,25 @@ Habiendo validado los mockups conceptuales e interactivos en la Entrega 1 (`Tall
 - **Objetivo de Negocio:** Comparar el volumen de negocio y ticket medio entre mercados nacionales e internacionales.
 - **Tarjetas KPI:**
   - *Territorios Comerciales:* 10
-  - *Venta Nacional (Norteamérica):* Participación porcentual de US y Canadá (72,2%).
-  - *Venta Internacional:* Participación de Europa y Pacífico (27,8%).
+  - *Ventas Norteamérica:* Participación porcentual de US y Canadá (72,2%).
+  - *Ventas Europa y Pacífico:* Participación de esos grupos (27,8%). No se presupone un país base para etiquetar venta nacional/internacional.
   - *Territorio con Mayor Venta:* Southwest ($24,18M), seguido de Canada ($16,36M) y Northwest ($16,08M).
 - **Visualizaciones Principales:**
   - Gráfico de columnas apiladas al 100%: Participación mensual de cada grupo territorial (`North America`, `Europe`, `Pacific`).
   - Mapa de calor con métricas de ventas y cantidad de clientes compradores.
 - **Jerarquía Drill Down:** `DimTerritory[Group]` → `DimTerritory[CountryRegionCode]` → `DimTerritory[TerritoryName]`.
 
-#### Reporte V4: Desempeño y Cuotas de Vendedores
-- **Objetivo de Negocio:** Evaluar la productividad de la fuerza comercial presencial y el cumplimiento de cuotas individuales.
+#### Reporte V4: Desempeño de Vendedores
+- **Objetivo de Negocio:** Comparar el aporte comercial de vendedores identificados, sin inferir cumplimiento de metas.
 - **Tarjetas KPI:**
-  - *Ejecutivos Comerciales:* 17 vendedores registrados
-  - *Ventas Asistidas:* Facturación generada por vendedores presenciales
-  - *Cumplimiento Global de Cuota:* `SUM(FactSales[LineTotal]) / SUM(DimSalesPerson[SalesQuota])` (la cuota es un valor único por vendedor y las ventas abarcan 2011-2014, por lo que el cumplimiento resulta muy superior a 100%; se recomienda filtrar por año o interpretarlo como índice relativo entre vendedores)
-  - *Comisión Total Estimada:* `SUMX(FactSales, FactSales[LineTotal] * RELATED(DimSalesPerson[CommissionPct]))`
+  - *Venta con Vendedor:* Venta neta con `SalesPersonKey <> 0`.
+  - *Vendedores con Ventas:* Distintos vendedores presentes en los hechos del período seleccionado.
+  - *Órdenes con Vendedor:* Órdenes distintas de esas operaciones.
+  - *Ticket Promedio:* Venta con vendedor / órdenes con vendedor.
 - **Visualizaciones Principales:**
-  - Gráfico de barras comparativo: Ventas reales vs Cuota asignada por vendedor.
-  - Tabla de ranking comercial con bonus acumulado y territorio asignado.
+  - Ranking de venta neta por vendedor y tendencia mensual.
+  - Detalle de compradores, órdenes, ticket y margen estimado.
+- **Límite:** No se muestran cuota, bonus ni comisión actuales como indicadores históricos. Territorio corresponde a la venta, no a la asignación actual del vendedor. Las ventas sin vendedor permanecen en otros reportes.
 
 #### Reporte V5: Descuentos, Ofertas y Venta Neta
 - **Objetivo de Negocio:** Evaluar el impacto de las campañas promocionales y descuentos por volumen en el margen financiero.
@@ -234,4 +253,10 @@ Habiendo validado los mockups conceptuales e interactivos en la Entrega 1 (`Tall
 1. **Modo de Almacenamiento:** Conexión mediante modo **Importación** (VertiPaq) apuntando a la base `AdventureWorksDW` en `localhost,1433`. La guía paso a paso, las consultas de Power Query, las relaciones y las medidas DAX listas para pegar están en la carpeta [`powerbi/`](../powerbi/README.md).
 2. **Modelo de Relaciones:** Esquema en estrella puro con dirección de filtro unidireccional (1 a varios desde las dimensiones hacia las tablas de hechos).
 3. **Optimización de Medidas:** Todas las métricas dinámicas deben ser implementadas mediante medidas DAX explícitas (no columnas calculadas), asegurando máximo rendimiento en memoria.
-4. **Bonificación de Drill Down:** Se implementaron las jerarquías requeridas en Tiempo, Geografía, Producto y Centro de Costo para habilitar la navegación interactiva solicitada en la pauta oficial.
+4. **Bonificación de Drill Down:** Las jerarquías están diseñadas; su implementación y funcionamiento deben comprobarse en Power BI Desktop. No se consideran implementadas por existir este documento.
+
+## 5. Validación SQL previa a Power BI
+
+Los scripts de [database/reports/](../database/reports/) obtienen indicadores, detalles de los 15 reportes y ocho escenarios del piloto V1. Ejecutar `python database/reports/validar_reportes.py` antes de comparar el modelo de Power BI. Las cifras dependen de la carga aceptada actual: no son constantes obligatorias para una nueva fuente.
+
+Esta validación comprueba consultas y coherencia del DW, no ejecuta DAX ni verifica interacciones visuales. Para C1/C4, los conteos de cartera no se reducen por fecha de venta con filtros unidireccionales; los compradores y ventas sí. C3 usa como referencia la última fecha de venta global de la carga, no la fecha de hoy. En C2 deben definirse explícitamente los filtros del universo del Pareto y cómo tratar empates; el control SQL incluye toda la cartera compradora, no solo el top 50 mostrado.

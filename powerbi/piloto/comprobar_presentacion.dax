@@ -1,0 +1,23 @@
+// Consulta DAX para ejecutar en Desktop. No pegar como medida.
+// Abril 2011 no se ofrece en el desplegable; se fuerza aqui para probar el aviso.
+EVALUATE
+UNION (
+    CALCULATETABLE (
+        ROW ( "Caso", "2011_abril_Australia", "Ordenes", [Ordenes],
+              "Ventas", [Ventas Netas], "Estado", [Estado de Seleccion] ),
+        TREATAS ( {2011}, DimDate[Year] ), TREATAS ( {4}, DimDate[Month] ),
+        TREATAS ( {"Australia"}, DimTerritory[TerritoryName] )
+    ),
+    CALCULATETABLE (
+        ROW ( "Caso", "2011_junio_Australia", "Ordenes", [Ordenes],
+              "Ventas", [Ventas Netas], "Estado", [Estado de Seleccion] ),
+        TREATAS ( {2011}, DimDate[Year] ), TREATAS ( {6}, DimDate[Month] ),
+        TREATAS ( {"Australia"}, DimTerritory[TerritoryName] )
+    ),
+    CALCULATETABLE (
+        ROW ( "Caso", "2011_noviembre_Northwest", "Ordenes", [Ordenes],
+              "Ventas", [Ventas Netas], "Estado", [Estado de Seleccion] ),
+        TREATAS ( {2011}, DimDate[Year] ), TREATAS ( {11}, DimDate[Month] ),
+        TREATAS ( {"Northwest"}, DimTerritory[TerritoryName] )
+    )
+)

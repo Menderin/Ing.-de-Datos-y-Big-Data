@@ -1,13 +1,14 @@
 -- ==============================================================================
 -- 02_populate_dim_date.sql
--- Poblado de la Dimensión DimDate (2010 - 2015)
+-- Poblado de DimDate: rango minimo 2010-2015, ampliado segun la fuente aceptada.
 -- Proyecto: Ingeniería de Datos y Big Data - Entrega 2
 -- ==============================================================================
 
-USE [AdventureWorksDW];
+USE [$(TargetDatabase)];
 GO
 
 SET NOCOUNT ON;
+SET DATEFIRST 7;
 
 PRINT 'Poblando dimension DimDate...';
 
@@ -21,9 +22,35 @@ INSERT INTO dbo.DimDate (
     -1, '1900-01-01', 1900, 0, 'N/A', 0, 'No Aplica', '1900-00', 0, 0, 'No Aplica', 0
 );
 
--- 2. Generar calendario continuo 2010-01-01 a 2015-12-31 usando CTE recursiva
-DECLARE @StartDate DATE = '2010-01-01';
-DECLARE @EndDate DATE   = '2015-12-31';
+-- 2. Generar calendario continuo adaptable usando CTE recursiva
+DECLARE @StartDate date='2010-01-01', @EndDate date='2015-12-31';
+DECLARE @MinDate date, @MaxDate date;
+SELECT @MinDate=MIN(v.d), @MaxDate=MAX(v.d) FROM (
+SELECT [OrderDate] AS d FROM #src_Sales_SalesOrderHeader
+UNION ALL
+SELECT [DueDate] AS d FROM #src_Sales_SalesOrderHeader
+UNION ALL
+SELECT [ShipDate] AS d FROM #src_Sales_SalesOrderHeader
+UNION ALL
+SELECT [StartDate] AS d FROM #src_Production_WorkOrder
+UNION ALL
+SELECT [EndDate] AS d FROM #src_Production_WorkOrder
+UNION ALL
+SELECT [DueDate] AS d FROM #src_Production_WorkOrder
+UNION ALL
+SELECT [ScheduledStartDate] AS d FROM #src_Production_WorkOrderRouting
+UNION ALL
+SELECT [ScheduledEndDate] AS d FROM #src_Production_WorkOrderRouting
+UNION ALL
+SELECT [ActualStartDate] AS d FROM #src_Production_WorkOrderRouting
+UNION ALL
+SELECT [ActualEndDate] AS d FROM #src_Production_WorkOrderRouting
+) v WHERE v.d IS NOT NULL;
+IF @MinDate<@StartDate SET @StartDate=@MinDate;
+IF @MaxDate>@EndDate SET @EndDate=@MaxDate;
+-- Evitar agotar recursos ante un rango extremo. No es un limite de filas de la fuente.
+IF DATEDIFF(DAY,@StartDate,@EndDate)>366000
+ THROW 51003, 'Rango de calendario superior a 1000 anios: revisar fuente antes de publicar.', 1;
 
 WITH DateSequence AS (
     SELECT @StartDate AS [Date]
@@ -81,7 +108,7 @@ SELECT
     END AS DayOfWeekName,
     CASE WHEN DATEPART(WEEKDAY, [Date]) IN (1, 7) THEN 1 ELSE 0 END AS IsWeekend
 FROM DateSequence
-OPTION (MAXRECURSION 3000);
+OPTION (MAXRECURSION 0);
 
 PRINT 'DimDate poblada con exito: ' + CAST(@@ROWCOUNT + 1 AS VARCHAR(10)) + ' registros.';
 GO

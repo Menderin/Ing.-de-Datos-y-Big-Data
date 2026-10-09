@@ -1,0 +1,230 @@
+{
+  "database": "AdventureWorksDW",
+  "reports": {
+    "C1": {
+      "registrados": 19820,
+      "individuales": 18484,
+      "tiendas": 1336,
+      "compradores": 19119
+    },
+    "C2": {
+      "ventas": "109846381.399888",
+      "compradores": 19119,
+      "ordenes": 31465,
+      "ventas_por_cliente": "5745.4041215486165594",
+      "ordenes_por_cliente": "1.64574507034886761",
+      "top10_tiendas": "7922046.383838"
+    },
+    "C3": {
+      "compradores": 19119,
+      "frecuentes": 793,
+      "recurrentes": 6677,
+      "compra_unica": 11649,
+      "recencia_media_dias": "190.267482",
+      "fecha_referencia": "2014-06-30"
+    },
+    "C4": {
+      "territorios_con_clientes": 10,
+      "paises_con_clientes": 6,
+      "clientes_sin_pais": 0,
+      "territorio_lider_clientes": "Southwest"
+    },
+    "C5": {
+      "ordenes_online": 27659,
+      "ordenes_asistidas": 3806,
+      "ventas_online": "29358677.220700",
+      "ventas_asistidas": "80487704.179188",
+      "ticket_online": "1061.4511450413970136",
+      "ticket_asistido": "21147.5838621093011035"
+    },
+    "P1": {
+      "ordenes": 72591,
+      "planificadas": 4507721,
+      "almacenadas": 4497070,
+      "desechadas": 10651
+    },
+    "P2": {
+      "costo_descarte": "359947.1751",
+      "tasa_descarte": "0.0023628347",
+      "ordenes_con_descarte": 729,
+      "motivos_registrados": 16,
+      "motivos_utilizados": 16
+    },
+    "P3": {
+      "unidades": 335974,
+      "valor_inventario": "20092679.1712",
+      "productos_con_registro": 432,
+      "productos_stock_positivo": 428,
+      "ubicaciones_con_registro": 14,
+      "ubicaciones_catalogo": 14,
+      "bajo_reorden": 7
+    },
+    "P4": {
+      "operaciones": 67131,
+      "horas": "228962.2000",
+      "costo_real": "3487969.5000",
+      "costo_planificado": "3487969.5000",
+      "variacion": "0.0000",
+      "operaciones_sin_inicio_real": 0
+    },
+    "P5": {
+      "productos": 504,
+      "terminados": 295,
+      "fabricados": 239,
+      "categorias_informadas": 4,
+      "productos_sin_categoria": 209
+    },
+    "V1": {
+      "ventas": "109846381.399888",
+      "costo": "100474477.7735",
+      "margen": "9371903.626388",
+      "margen_pct": "0.0853182736",
+      "ordenes": 31465,
+      "ticket": "3491.0656729664071190",
+      "unidades": 274914
+    },
+    "V2": {
+      "unidades": 274914,
+      "productos_vendidos": 266,
+      "precio_medio_por_linea": "465.093495",
+      "precio_neto_por_unidad": "399.5663422011538153",
+      "participacion_bikes": "0.8616685547"
+    },
+    "V3": {
+      "territorios_con_venta": 10,
+      "ventas_norteamerica": "79353361.162285",
+      "ventas_internacionales": "30493020.237603",
+      "ventas_otro_grupo": "0.000000"
+    },
+    "V4": {
+      "vendedores_registrados": 17,
+      "vendedores_con_venta": 17,
+      "ventas_asistidas": "80487704.179188",
+      "cuota_actual": "3650000.0000",
+      "vendedores_sin_cuota": 3,
+      "comision_estimada": "1101643.4625276650",
+      "bonus_actual": "48610.0000"
+    },
+    "V5": {
+      "venta_bruta": "110373889.3134",
+      "descuento": "527507.9262",
+      "venta_neta": "109846381.399888",
+      "tasa_descuento": "0.0047792818",
+      "lineas_descuento": 3282,
+      "ventas_oferta": "7473759.139488",
+      "ventas_regular": "102372622.260400"
+    }
+  },
+  "pilot": {
+    "sin_filtros": {
+      "lineas": 121317,
+      "ventas": "109846381.399888",
+      "costo": "100474477.7735",
+      "margen": "9371903.626388",
+      "margen_pct": "0.0853182736",
+      "ordenes": 31465,
+      "ticket": "3491.0656729664071190",
+      "unidades": 274914
+    },
+    "anio_2013": {
+      "lineas": 56573,
+      "ventas": "43622479.051635",
+      "costo": "40268116.1225",
+      "margen": "3354362.929135",
+      "margen_pct": "0.0768952843",
+      "ordenes": 14182,
+      "ticket": "3075.9046010178395148",
+      "unidades": 131788
+    },
+    "southwest": {
+      "lineas": 25644,
+      "ventas": "24184609.600810",
+      "costo": "22620898.7902",
+      "margen": "1563710.810610",
+      "margen_pct": "0.0646572690",
+      "ordenes": 6224,
+      "ticket": "3885.7020566854113110",
+      "unidades": 59105
+    },
+    "2013_southwest": {
+      "lineas": 11466,
+      "ventas": "9116540.314502",
+      "costo": "8577633.5677",
+      "margen": "538906.746802",
+      "margen_pct": "0.0591130766",
+      "ordenes": 2725,
+      "ticket": "3345.5193814686238532",
+      "unidades": 26682
+    },
+    "junio_2013": {
+      "lineas": 5210,
+      "ventas": "5081069.131596",
+      "costo": "4978922.1120",
+      "margen": "102147.019596",
+      "margen_pct": "0.0201034500",
+      "ordenes": 719,
+      "ticket": "7066.8555376856745479",
+      "unidades": 16611
+    },
+    "online": {
+      "lineas": 60398,
+      "ventas": "29358677.220700",
+      "costo": "17670734.3412",
+      "margen": "11687942.879500",
+      "margen_pct": "0.3981086338",
+      "ordenes": 27659,
+      "ticket": "1061.4511450413970136",
+      "unidades": 60398
+    },
+    "2013_southwest_online": {
+      "lineas": 5798,
+      "ventas": "1917288.980000",
+      "costo": "1127518.0656",
+      "margen": "789770.914400",
+      "margen_pct": "0.4119206455",
+      "ordenes": 2431,
+      "ticket": "788.6832496914849856",
+      "unidades": 5798
+    },
+    "sin_ventas_2010": {
+      "lineas": 0,
+      "ventas": null,
+      "costo": null,
+      "margen": null,
+      "margen_pct": null,
+      "ordenes": 0,
+      "ticket": null,
+      "unidades": null
+    }
+  },
+  "checks": [
+    "C1 tipos = cartera",
+    "C3 segmentos = compradores",
+    "C5 canales = ordenes",
+    "C5 ventas por canal",
+    "P1 conformes + descarte",
+    "P4 diferencia de costos",
+    "V1 venta = costo + margen",
+    "V2 unidades",
+    "V3 grupos = ventas",
+    "V4 ventas asistidas",
+    "V5 ofertas + regular",
+    "V5 bruto - descuento = neto (redondeo)",
+    "Piloto sin filtros: ventas",
+    "Piloto sin filtros: costo",
+    "Piloto sin filtros: margen",
+    "Piloto sin filtros: ordenes",
+    "Piloto sin filtros: ticket",
+    "Piloto sin filtros: unidades",
+    "Piloto costo + margen: sin_filtros",
+    "Piloto costo + margen: anio_2013",
+    "Piloto costo + margen: southwest",
+    "Piloto costo + margen: 2013_southwest",
+    "Piloto costo + margen: junio_2013",
+    "Piloto costo + margen: online",
+    "Piloto costo + margen: 2013_southwest_online",
+    "Piloto costo + margen: sin_ventas_2010"
+  ],
+  "verified_at": "2026-10-07",
+  "note": "Referencia SQL de la carga actual. Decimales conservados como cadenas; no son pruebas DAX."
+}
